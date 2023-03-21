@@ -1,0 +1,3 @@
+/home/dave/Documents/dev/clion/i2c_projekt/cmake-build-debug/CMakeFiles/pw_manager.dir
+/home/dave/Documents/dev/clion/i2c_projekt/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/dave/Documents/dev/clion/i2c_projekt/cmake-build-debug/CMakeFiles/rebuild_cache.dir
