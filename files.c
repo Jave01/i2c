@@ -41,7 +41,6 @@ int get_entry_count(pw_list_t *pwList){
             lines++;
         }
     }
-    rewind(pwList->file);
 
     return lines;
 }
@@ -55,15 +54,15 @@ int get_entry_count(pw_list_t *pwList){
  * @return pointer to the value string
 */
 char* get_entry(pw_list_t *pwList, char* str, char* key){
-    int range = get_entry_count(pwList->file);
-
-    rewind(pwList->file);
+    int range = get_entry_count(pwList);
 
     if (range < 1)
     {
         printf("Not enough entries (%d)", range);
+        return NULL;
     }
 
+    rewind(pwList->file);
     char c;
     for (int i = 0; i < range; i++)
     {
@@ -95,8 +94,7 @@ char* get_entry(pw_list_t *pwList, char* str, char* key){
  * @return bool if the action was successful
 */
 bool set_entry(pw_list_t* pw_list, char* key, char* val){
-    if (strlen(key) > MAX_KEY_LEN || strlen(key) < 1)
-    {
+    if (strlen(key) > MAX_KEY_LEN || strlen(key) < 1){
         printf("Key size invalid (%ld/%d chars)\n", strlen(key), MAX_KEY_LEN);
         return false;
     } else if (strlen(val) > MAX_VAL_LEN){
@@ -104,31 +102,36 @@ bool set_entry(pw_list_t* pw_list, char* key, char* val){
         return false;
     }
 
-    char* entry_value = malloc(MAX_LINE_LEN * sizeof(char));
+    /* some variables for determining the (maybe) existing entry */
+    char entry_value[MAX_LINE_LEN];
     char* entry_p = get_entry(pw_list, entry_value, key);
-    free(entry_value);
 
     /* create new entry_value if it doesn't exist */
     if (entry_p == NULL)
     {
         fclose(pw_list->file);
-        pw_list->file = fopen(pw_list->filename, "a");
+        pw_list->file = fopen(pw_list->filename, "a+");
 
         /* insert newline if there isn't one */
-        fseek(pw_list->file, -1, SEEK_END);
-        char c = fgetc(pw_list->file);
-        if ((c) != '\n'){
-            fputc('\n', pw_list->file);
+        fseek(pw_list->file, 0, SEEK_END); // seek to end of file
+        if (ftell(pw_list->file) > 0) { // check if file is non-empty
+            fseek(pw_list->file, -1, SEEK_END);
+            char c = fgetc(pw_list->file);
+            if (c != '\n') {
+                fputc('\n', pw_list->file);
+            }
         }
 
         /* add content */
-        fputs(key, pw_list->file);
-        fputc(':', pw_list->file);
-        fputs(val, pw_list->file);
+        if (fputs(key, pw_list->file) == EOF ||
+            fputc(':', pw_list->file) == EOF ||
+            fputs(val, pw_list->file) == EOF) {
+            perror("Error while writing to file");
+        }
 
         fclose(pw_list->file);
 
-        pw_list->file = fopen(pw_list->filename, "r");
+        pw_list->file = fopen(pw_list->filename, "r+");
         pw_list->entry_count++;
 
         printf("added content successfully\n");
@@ -136,6 +139,9 @@ bool set_entry(pw_list_t* pw_list, char* key, char* val){
         return true;
 
     } else {
+        /* If entry does exist, copy the file leading file content to a temp file,
+         * insert the new data and append the remaining data. The original file will be
+         * deleted and the temp file renamed to the original filename
         /* copy content */
         FILE* ftemp = fopen("temp.txt", "w");
 
@@ -154,7 +160,9 @@ bool set_entry(pw_list_t* pw_list, char* key, char* val){
         fclose(pw_list->file);
         remove(pw_list->filename);
         rename("temp.txt", pw_list->filename);
+
     }
+    return true;
 }
 
 
@@ -192,15 +200,16 @@ bool check_master_pw(pw_list_t *pwList, char *master_pw) {
 }
 
 
-/** Set a new password.
- * The given string gets hashed with SHA256 algorithm and written on the beginning of the file, where
+/** Save the new password as hash in the file.
+ * The given string gets hashed with SHA256 and written at the beginning of the file, where
  * the master pw should be stored.
  * @param pwList a pointer to pw_list struct
  * @param new_pw the new password in plain text
  */
-void set_master_pw(pw_list_t *pwList, char* new_pw){
+void save_master_pw(pw_list_t *pwList, char *new_pw) {
+    strcpy(pwList->master_pw, new_pw);
     unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256((const unsigned char*)new_pw, strlen(new_pw), hash);
+    SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
 
     rewind(pwList->file);
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {

@@ -1,9 +1,20 @@
-# HSLU I2C
+# HSLU I2C Password Manager
 
-Basic password manager
+Basic password manager, able to store key:value entries. Because of simplicity it isn't 
+realized with a hash table but with the values chained one after another.
 
-## Structure:
+## Structure
 
-Beginning of file is a SHA256 hash representing the master password. The individual
-entries are separated by a \n character whereas the key/value pair is separated by ':'
+The Structure of the file is as follows:
 
+| Bytes in file         | Value                                 |
+|-----------------------|---------------------------------------|
+| First 32 bytes        | SHA256 hash of master password in hex |
+| strlen(val1+key1) + 3 | key1:val1\n\0                         |
+| strlen(val2+key2) + 3 | key2:val2\n\0                         |
+| ...                   | ...                                   |       
+
+## Limitations
+
+- The application can only understand and process extended ASCII (8bit) characters.
+- Since the individual entries are arranged directly next to each other, a compromise must be made between write speed and file size when handling insertions.
