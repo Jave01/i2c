@@ -25,54 +25,42 @@
 /**********************************************************************************************
  * Private function Headers
  **********************************************************************************************/
+ /* user interaction */
 static void get_db_name(unsigned char* name);
-static void request_new_password(unsigned char* output);
+static void unlock_database(pw_list_t *pwList);
+static void request_new_master_password(unsigned char* output);
 
 
 /**********************************************************************************************
  * Main function
  **********************************************************************************************/
-int main()
-{
+int main() {
     pw_list_t pwList = {
             .file = NULL,
             .filename = malloc(sizeof(char) * MAX_DB_NAME_LEN),
             .master_pw = malloc(sizeof(char) * MAX_MASTER_PW_LEN)
-            };
+    };
 
     /* startup sequence */
     char inp;
-    while(pwList.file == NULL){
+    while (pwList.file == NULL) {
         printf("Enter o for opening a database, c for creating one or q to quit:\n> ");
         scanf(" %c", &inp);
 
         fgetc(stdin); // remove whitespace for further scanning.
 
-        if(inp == 'o'){
+        if (inp == 'o') {
             get_db_name(pwList.filename);
-
-            pwList.file = fopen(pwList.filename, "r+");
-            if(pwList.file != NULL){
-                char buf[SHA256_STR_LEN + 1] = {0};
-                fgets(buf, SHA256_STR_LEN + 1, pwList.file);
-                if(strlen(buf) != SHA256_STR_LEN){
-                    printf("File is not of correct format or corrupted\n");
-                    fclose(pwList.file);
-                    pwList.file = NULL;
-                } else {
-                    printf("Database loaded successfully\n");
-                }
-            }else {
-                printf("\n");
-                perror("Error opening file");
+            unlock_database(&pwList);
+            if(pwList.file == NULL){
                 continue;
             }
-        } else if(inp == 'c'){
+        } else if (inp == 'c') {
             get_db_name(pwList.filename);
 
             /* check if file already exists */
             pwList.file = fopen(pwList.filename, "r");
-            if(pwList.file != NULL){
+            if (pwList.file != NULL) {
                 printf("File already exists\n");
                 fclose(pwList.file);
                 pwList.file = NULL;
@@ -83,7 +71,7 @@ int main()
             /* create new file */
             pwList.file = fopen(pwList.filename, "w");
             pwList.entry_count = 0;
-            if(pwList.file == NULL){
+            if (pwList.file == NULL) {
                 perror("Error creating file");
                 continue;
             }
@@ -91,16 +79,15 @@ int main()
             fclose(pwList.file);
             pwList.file = fopen(pwList.filename, "r+");
 
-            request_new_password(pwList.master_pw);
+            request_new_master_password(pwList.master_pw);
             save_master_pw(&pwList, pwList.master_pw);
 
             printf("Database created successfully\n");
 
-        }else if(inp == 'q'){
+        } else if (inp == 'q') {
             printf("quitting\n");
             return 0;
-        }
-        else{
+        } else {
             printf("not a valid option\n");
             continue;
         }
@@ -109,31 +96,27 @@ int main()
     /* main sequence */
     bool running = true;
     printf("Enter a command. Valid commands can be displayed with 'h'\n");
-    while(running){
+    while (running) {
         printf("> ");
-        scanf(" %c", &inp);
+        getchar(); // remove whitespace
+        inp = getchar();
         switch (inp) {
-            case 'a': {
+            case 'e': {
                 char key[MAX_KEY_LEN], val[MAX_VAL_LEN];
-                char* scanf_arg[10];
+                char *scanf_arg[10];
 
-                sprintf(scanf_arg, "%%%ds", MAX_KEY_LEN-1); // construct format string with the
+                sprintf(scanf_arg, "%%%ds", MAX_KEY_LEN - 1); // construct format string
                 printf("Enter the key:");
                 scanf(scanf_arg, key);
 
-                sprintf(scanf_arg, "%%%ds", MAX_VAL_LEN-1);
+                sprintf(scanf_arg, "%%%ds", MAX_VAL_LEN - 1);
                 printf("Enter the value:");
                 scanf(scanf_arg, val);
-
-                printf("Your key:value pair: %s:%s\n", key, val);
 
                 set_entry(&pwList, key, val);
 
                 break;
             }
-            case 'e':
-                printf("editing not implemented yet\n");
-                break;
             case 'q':
                 printf("quitting...\n");
                 running = false;
@@ -142,7 +125,7 @@ int main()
                 printf("remove not implemented yet\n");
                 break;
             case 'h':
-                printf("Summary of valid character inputs:\nh - Help\na - add entry\ne - edit entry\nr - remove entry\nq - quit application\n");
+                printf("Summary of valid character inputs:\ne - edit database\nr - remove entry\nq - quit application\nh - help\n");
                 break;
             default:
                 printf("Invalid option\n");
@@ -151,24 +134,6 @@ int main()
 
     fclose(pwList.file);
     pwList.file = NULL;
-/* ------ hashing -------- */
-//    pw_list_t pwList = {
-//            .filename = "pw.txt",
-//            .file = fopen("pw.txt", "r+"),
-//    };
-//
-//    save_master_pw(&pwList, "super-secret-master-pw");
-//
-//    bool result = check_master_pw(&pwList, "super-secret-master-pw");
-//    if (result){
-//        printf("Hashes do match\n");
-//    } else{
-//        printf("Hashes do not match\n");
-//    }
-//
-//    fclose(pwList.file);
-//    pwList.file = NULL;
-//    return 0;
 }
 
 
@@ -180,11 +145,45 @@ static void get_db_name(unsigned char* name){
 
     printf("Enter a DB name (max length %d): ", MAX_DB_NAME_LEN-1);
 
-    sprintf(scanf_arg, "%%%ds", MAX_DB_NAME_LEN-1); // construct format string with the
+    sprintf(scanf_arg, "%%%ds", MAX_DB_NAME_LEN-1); // construct format string
     scanf(scanf_arg, name);
 }
 
-static void request_new_password(unsigned char* output){
+static void unlock_database(pw_list_t *pwList){
+    bool pw_accepted = false;
+    char pw[MAX_MASTER_PW_LEN + 1];
+    char scanf_arg[5] = {0};
+
+    pwList->file = fopen(pwList->filename, "r+");
+    if (pwList->file != NULL) {
+        char buf[SHA256_STR_LEN + 1] = {0};
+        sprintf(scanf_arg, "%%%ds", MAX_MASTER_PW_LEN-1); // construct format string
+        fgets(buf, SHA256_STR_LEN + 1, pwList->file);
+        if (strlen(buf) != SHA256_STR_LEN) {
+            printf("File is not of correct format or corrupted.\n");
+            fclose(pwList->file);
+            pwList->file = NULL;
+            return;
+        }
+    } else {
+        printf("\n");
+        perror("Error opening file");
+    }
+    while(!pw_accepted){
+        printf("Enter master password:");
+        scanf(scanf_arg, pw);
+
+        if(check_master_pw(pwList, pw)){
+            pwList->master_pw = pw;
+            pw_accepted=true;
+            printf("Database loaded successfully\n");
+        }else{
+            printf("pw incorrect\n");
+        }
+    }
+}
+
+static void request_new_master_password(unsigned char* output){
     bool pw_accepted = false;
     char buf[MAX_MASTER_PW_LEN+1];
     char buf2[MAX_MASTER_PW_LEN+1];

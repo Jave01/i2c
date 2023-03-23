@@ -36,11 +36,11 @@ typedef struct pw_list
 /**********************************************************************************************
  * Function Headers
  **********************************************************************************************/
-int get_entry_count(pw_list_t *pwList);
-char* get_entry(pw_list_t *pwList, char* str, char* key);
-bool set_entry(pw_list_t* pw_list, char* key, char* val);
+int get_entry_count(const pw_list_t *pwList);
+long get_entry(pw_list_t *pwList, unsigned char *str, const unsigned char *key);
+bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char *val);
 void save_master_pw(pw_list_t *pwList, char *new_pw);
-bool check_master_pw(pw_list_t *pwList, char *master_pw);
+bool check_master_pw(pw_list_t *pwList, const char *master_pw);
 
 
 #endif //PW_MANAGER_FILES_H
