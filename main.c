@@ -134,12 +134,17 @@ int main() {
 
     fclose(pwList.file);
     pwList.file = NULL;
-}
 
+    return 0;
+}
 
 /**********************************************************************************************
  * private functions
  **********************************************************************************************/
+/**
+ * Requests a new password from the user over cli.
+ * @param name pointer to the variable where the name gets written to
+ */
 static void get_db_name(unsigned char* name){
     char* scanf_arg[10];
 
@@ -149,6 +154,11 @@ static void get_db_name(unsigned char* name){
     scanf(scanf_arg, name);
 }
 
+
+/** WIP! currently only checks if entered password is correct, because encryption is not implemented yet
+ *
+ * @param pwList pointer to struct where file and password will be saved to.
+ */
 static void unlock_database(pw_list_t *pwList){
     bool pw_accepted = false;
     char pw[MAX_MASTER_PW_LEN + 1];
@@ -183,6 +193,11 @@ static void unlock_database(pw_list_t *pwList){
     }
 }
 
+
+/**
+ * Requests a new master password from the user.
+ * @param output variable where the password gets written to.
+ */
 static void request_new_master_password(unsigned char* output){
     bool pw_accepted = false;
     char buf[MAX_MASTER_PW_LEN+1];

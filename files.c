@@ -34,10 +34,7 @@ int get_entry_count(const pw_list_t *pwList){
 
     char buffer[MAX_LINE_LEN] = {0};
     while (fgets(buffer, MAX_LINE_LEN, pwList->file) != NULL) {
-        if (strcmp(buffer, "\n") != 0) // check if line is empty
-        {
-            lines++;
-        }
+        lines++;
     }
 
     return lines;
