@@ -218,7 +218,6 @@ bool check_master_pw(pw_list_t *pwList, const char *master_pw) {
     /* --- read in and compare --- */
     // Read in the stored hash from the file
     unsigned char stored_hash[SHA256_DIGEST_LENGTH];
-
     char stored_hash_str[2 * SHA256_DIGEST_LENGTH + 1];
     fscanf(pwList->file, "%s", stored_hash_str);
 
@@ -248,7 +247,7 @@ bool check_master_pw(pw_list_t *pwList, const char *master_pw) {
  */
 void save_master_pw(pw_list_t *pwList, char *new_pw) {
     strcpy(pwList->master_pw, new_pw);
-    unsigned char hash[SHA256_DIGEST_LENGTH];
+    unsigned char hash[SHA256_DIGEST_LENGTH+1];
     SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
 
     rewind(pwList->file);

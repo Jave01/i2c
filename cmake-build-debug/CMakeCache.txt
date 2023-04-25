@@ -28,7 +28,7 @@ CMAKE_BUILD_TYPE:STRING=Debug
 CMAKE_COLOR_DIAGNOSTICS:BOOL=ON
 
 //C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+CMAKE_C_COMPILER:STRING=/usr/bin/cc
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -186,6 +186,24 @@ CMAKE_STRIP:FILEPATH=/usr/bin/strip
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
+//The directory containing a CMake configuration file for Findsodium.cmake.
+Findsodium.cmake_DIR:PATH=Findsodium.cmake_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for Findsodium.
+Findsodium_DIR:PATH=Findsodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for Libsodium.
+Libsodium_DIR:PATH=Libsodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for Lindsodium.
+Lindsodium_DIR:PATH=Lindsodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for Lisodium.
+Lisodium_DIR:PATH=Lisodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for Lsodium.
+Lsodium_DIR:PATH=Lsodium_DIR-NOTFOUND
+
 //Path to a library.
 OPENSSL_CRYPTO_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libcrypto.so
 
@@ -201,6 +219,15 @@ PKG_CONFIG_ARGN:STRING=
 //pkg-config executable
 PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
 
+//The directory containing a CMake configuration file for Sodium.
+Sodium_DIR:PATH=Sodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for libsodium.
+libsodium_DIR:PATH=libsodium_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for lsodium.
+lsodium_DIR:PATH=lsodium_DIR-NOTFOUND
+
 //Path to a library.
 pkgcfg_lib__OPENSSL_crypto:FILEPATH=/usr/lib/x86_64-linux-gnu/libcrypto.so
 
@@ -215,6 +242,9 @@ pw_manager_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 pw_manager_SOURCE_DIR:STATIC=/home/dave/Documents/dev/clion/i2c_projekt
+
+//The directory containing a CMake configuration file for sodium.
+sodium_DIR:PATH=sodium_DIR-NOTFOUND
 
 
 ########################
@@ -346,6 +376,33 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding OpenSSL
 FIND_PACKAGE_MESSAGE_DETAILS_OpenSSL:INTERNAL=[/usr/lib/x86_64-linux-gnu/libcrypto.so][/usr/include][c ][v3.0.8()]
+//Details about finding PkgConfig
+FIND_PACKAGE_MESSAGE_DETAILS_PkgConfig:INTERNAL=[/usr/bin/pkg-config][v1.9.4()]
+LIBSODIUM_CFLAGS:INTERNAL=
+LIBSODIUM_CFLAGS_I:INTERNAL=
+LIBSODIUM_CFLAGS_OTHER:INTERNAL=
+LIBSODIUM_FOUND:INTERNAL=
+LIBSODIUM_INCLUDEDIR:INTERNAL=
+LIBSODIUM_LIBDIR:INTERNAL=
+LIBSODIUM_LIBS:INTERNAL=
+LIBSODIUM_LIBS_L:INTERNAL=
+LIBSODIUM_LIBS_OTHER:INTERNAL=
+LIBSODIUM_LIBS_PATHS:INTERNAL=
+LIBSODIUM_MODULE_NAME:INTERNAL=
+LIBSODIUM_PREFIX:INTERNAL=
+LIBSODIUM_STATIC_CFLAGS:INTERNAL=
+LIBSODIUM_STATIC_CFLAGS_I:INTERNAL=
+LIBSODIUM_STATIC_CFLAGS_OTHER:INTERNAL=
+LIBSODIUM_STATIC_LIBDIR:INTERNAL=
+LIBSODIUM_STATIC_LIBS:INTERNAL=
+LIBSODIUM_STATIC_LIBS_L:INTERNAL=
+LIBSODIUM_STATIC_LIBS_OTHER:INTERNAL=
+LIBSODIUM_STATIC_LIBS_PATHS:INTERNAL=
+LIBSODIUM_VERSION:INTERNAL=
+LIBSODIUM_libsodium_INCLUDEDIR:INTERNAL=
+LIBSODIUM_libsodium_LIBDIR:INTERNAL=
+LIBSODIUM_libsodium_PREFIX:INTERNAL=
+LIBSODIUM_libsodium_VERSION:INTERNAL=
 //ADVANCED property for variable: OPENSSL_CRYPTO_LIBRARY
 OPENSSL_CRYPTO_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: OPENSSL_INCLUDE_DIR
@@ -394,7 +451,44 @@ _OPENSSL_openssl_LIBDIR:INTERNAL=
 _OPENSSL_openssl_PREFIX:INTERNAL=
 _OPENSSL_openssl_VERSION:INTERNAL=
 __pkg_config_arguments__OPENSSL:INTERNAL=QUIET;openssl
+__pkg_config_arguments_libsodium:INTERNAL=REQUIRED
 __pkg_config_checked__OPENSSL:INTERNAL=1
+__pkg_config_checked_libsodium:INTERNAL=1
+libsodium_CFLAGS:INTERNAL=
+libsodium_CFLAGS_I:INTERNAL=
+libsodium_CFLAGS_OTHER:INTERNAL=
+libsodium_FOUND:INTERNAL=1
+libsodium_INCLUDEDIR:INTERNAL=
+libsodium_INCLUDE_DIRS:INTERNAL=
+libsodium_LDFLAGS:INTERNAL=
+libsodium_LDFLAGS_OTHER:INTERNAL=
+libsodium_LIBDIR:INTERNAL=
+libsodium_LIBRARIES:INTERNAL=
+libsodium_LIBRARY_DIRS:INTERNAL=
+libsodium_LIBS:INTERNAL=
+libsodium_LIBSODIUM_INCLUDEDIR:INTERNAL=
+libsodium_LIBSODIUM_LIBDIR:INTERNAL=
+libsodium_LIBSODIUM_PREFIX:INTERNAL=
+libsodium_LIBSODIUM_VERSION:INTERNAL=
+libsodium_LIBS_L:INTERNAL=
+libsodium_LIBS_OTHER:INTERNAL=
+libsodium_LIBS_PATHS:INTERNAL=
+libsodium_MODULE_NAME:INTERNAL=
+libsodium_PREFIX:INTERNAL=
+libsodium_STATIC_CFLAGS:INTERNAL=
+libsodium_STATIC_CFLAGS_I:INTERNAL=
+libsodium_STATIC_CFLAGS_OTHER:INTERNAL=
+libsodium_STATIC_INCLUDE_DIRS:INTERNAL=
+libsodium_STATIC_LDFLAGS:INTERNAL=
+libsodium_STATIC_LDFLAGS_OTHER:INTERNAL=
+libsodium_STATIC_LIBDIR:INTERNAL=
+libsodium_STATIC_LIBRARIES:INTERNAL=
+libsodium_STATIC_LIBRARY_DIRS:INTERNAL=
+libsodium_STATIC_LIBS:INTERNAL=
+libsodium_STATIC_LIBS_L:INTERNAL=
+libsodium_STATIC_LIBS_OTHER:INTERNAL=
+libsodium_STATIC_LIBS_PATHS:INTERNAL=
+libsodium_VERSION:INTERNAL=
 //ADVANCED property for variable: pkgcfg_lib__OPENSSL_crypto
 pkgcfg_lib__OPENSSL_crypto-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib__OPENSSL_ssl

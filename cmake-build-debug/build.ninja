@@ -52,21 +52,28 @@ build cmake_object_order_depends_target_pw_manager: phony || CMakeFiles/pw_manag
 build CMakeFiles/pw_manager.dir/main.c.o: C_COMPILER__pw_manager_Debug /home/dave/Documents/dev/clion/i2c_projekt/main.c || cmake_object_order_depends_target_pw_manager
   DEP_FILE = CMakeFiles/pw_manager.dir/main.c.o.d
   FLAGS = -g -fdiagnostics-color=always -std=gnu11
-  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include
+  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include -I/usr/local/include -I/home/dave/Documents/dev/clion/i2c_projekt/libsodium-stable/src/libsodium/include
   OBJECT_DIR = CMakeFiles/pw_manager.dir
   OBJECT_FILE_DIR = CMakeFiles/pw_manager.dir
 
 build CMakeFiles/pw_manager.dir/files.c.o: C_COMPILER__pw_manager_Debug /home/dave/Documents/dev/clion/i2c_projekt/files.c || cmake_object_order_depends_target_pw_manager
   DEP_FILE = CMakeFiles/pw_manager.dir/files.c.o.d
   FLAGS = -g -fdiagnostics-color=always -std=gnu11
-  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include
+  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include -I/usr/local/include -I/home/dave/Documents/dev/clion/i2c_projekt/libsodium-stable/src/libsodium/include
   OBJECT_DIR = CMakeFiles/pw_manager.dir
   OBJECT_FILE_DIR = CMakeFiles/pw_manager.dir
 
 build CMakeFiles/pw_manager.dir/crypto.c.o: C_COMPILER__pw_manager_Debug /home/dave/Documents/dev/clion/i2c_projekt/crypto.c || cmake_object_order_depends_target_pw_manager
   DEP_FILE = CMakeFiles/pw_manager.dir/crypto.c.o.d
   FLAGS = -g -fdiagnostics-color=always -std=gnu11
-  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include
+  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include -I/usr/local/include -I/home/dave/Documents/dev/clion/i2c_projekt/libsodium-stable/src/libsodium/include
+  OBJECT_DIR = CMakeFiles/pw_manager.dir
+  OBJECT_FILE_DIR = CMakeFiles/pw_manager.dir
+
+build CMakeFiles/pw_manager.dir/password.c.o: C_COMPILER__pw_manager_Debug /home/dave/Documents/dev/clion/i2c_projekt/password.c || cmake_object_order_depends_target_pw_manager
+  DEP_FILE = CMakeFiles/pw_manager.dir/password.c.o.d
+  FLAGS = -g -fdiagnostics-color=always -std=gnu11
+  INCLUDES = -I/home/dave/Documents/dev/clion/i2c_projekt/include -I/usr/local/include -I/home/dave/Documents/dev/clion/i2c_projekt/libsodium-stable/src/libsodium/include
   OBJECT_DIR = CMakeFiles/pw_manager.dir
   OBJECT_FILE_DIR = CMakeFiles/pw_manager.dir
 
@@ -78,7 +85,7 @@ build CMakeFiles/pw_manager.dir/crypto.c.o: C_COMPILER__pw_manager_Debug /home/d
 #############################################
 # Link the executable pw_manager
 
-build pw_manager: C_EXECUTABLE_LINKER__pw_manager_Debug CMakeFiles/pw_manager.dir/main.c.o CMakeFiles/pw_manager.dir/files.c.o CMakeFiles/pw_manager.dir/crypto.c.o | /usr/lib/x86_64-linux-gnu/libcrypto.so
+build pw_manager: C_EXECUTABLE_LINKER__pw_manager_Debug CMakeFiles/pw_manager.dir/main.c.o CMakeFiles/pw_manager.dir/files.c.o CMakeFiles/pw_manager.dir/crypto.c.o CMakeFiles/pw_manager.dir/password.c.o | /usr/lib/x86_64-linux-gnu/libcrypto.so
   FLAGS = -g
   LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libcrypto.so
   OBJECT_DIR = CMakeFiles/pw_manager.dir

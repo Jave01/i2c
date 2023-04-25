@@ -30,6 +30,7 @@ typedef struct pw_list
     FILE* file;                    //!< File pointer to the original file
     unsigned char* master_pw;      //!< Master password from this file
     int entry_count;               //!< Number of entries in pw file including master
+    unsigned char * content;       //!< All unencrypted entries
 }pw_list_t;
 
 

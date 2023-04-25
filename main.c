@@ -20,7 +20,8 @@
 /* custom imports */
 #include "files.h"
 #include "main.h"
-
+#include "crypto.h"
+#include "password.h"
 
 /**********************************************************************************************
  * Private function Headers
@@ -29,6 +30,10 @@
 static void get_db_name(unsigned char* name);
 static void unlock_database(pw_list_t *pwList);
 static void request_new_master_password(unsigned char* output);
+
+/**********************************************************************************************
+ * Global variables
+ **********************************************************************************************/
 
 
 /**********************************************************************************************
@@ -41,96 +46,107 @@ int main() {
             .master_pw = malloc(sizeof(char) * MAX_MASTER_PW_LEN)
     };
 
-    /* startup sequence */
-    char inp;
-    while (pwList.file == NULL) {
-        printf("Enter o for opening a database, c for creating one or q to quit:\n> ");
-        scanf(" %c", &inp);
+    /* pw encryption test */
+    pwList.filename = "pw.txt";
+    pwList.file = fopen(pwList.filename, "r+");
 
-        fgetc(stdin); // remove whitespace for further scanning.
+    pwList.master_pw = "very_secret_key";
 
-        if (inp == 'o') {
-            get_db_name(pwList.filename);
-            unlock_database(&pwList);
-            if(pwList.file == NULL){
-                continue;
-            }
-        } else if (inp == 'c') {
-            get_db_name(pwList.filename);
+    save_to_file(&pwList);
+    load_pw_file(&pwList);
 
-            /* check if file already exists */
-            pwList.file = fopen(pwList.filename, "r");
-            if (pwList.file != NULL) {
-                printf("File already exists\n");
-                fclose(pwList.file);
-                pwList.file = NULL;
-                pwList.filename = NULL;
-                continue;
-            }
 
-            /* create new file */
-            pwList.file = fopen(pwList.filename, "w");
-            pwList.entry_count = 0;
-            if (pwList.file == NULL) {
-                perror("Error creating file");
-                continue;
-            }
-            /* reopen file in update mode */
-            fclose(pwList.file);
-            pwList.file = fopen(pwList.filename, "r+");
 
-            request_new_master_password(pwList.master_pw);
-            save_master_pw(&pwList, pwList.master_pw);
-
-            printf("Database created successfully\n");
-
-        } else if (inp == 'q') {
-            printf("quitting\n");
-            return 0;
-        } else {
-            printf("not a valid option\n");
-            continue;
-        }
-    }
-
-    /* main sequence */
-    bool running = true;
-    printf("Enter a command. Valid commands can be displayed with 'h'\n");
-    while (running) {
-        printf("> ");
-        getchar(); // remove whitespace
-        inp = getchar();
-        switch (inp) {
-            case 'e': {
-                char key[MAX_KEY_LEN], val[MAX_VAL_LEN];
-                char *scanf_arg[10];
-
-                sprintf(scanf_arg, "%%%ds", MAX_KEY_LEN - 1); // construct format string
-                printf("Enter the key:");
-                scanf(scanf_arg, key);
-
-                sprintf(scanf_arg, "%%%ds", MAX_VAL_LEN - 1);
-                printf("Enter the value:");
-                scanf(scanf_arg, val);
-
-                set_entry(&pwList, key, val);
-
-                break;
-            }
-            case 'q':
-                printf("quitting...\n");
-                running = false;
-                break;
-            case 'r':
-                printf("remove not implemented yet\n");
-                break;
-            case 'h':
-                printf("Summary of valid character inputs:\ne - edit database\nr - remove entry\nq - quit application\nh - help\n");
-                break;
-            default:
-                printf("Invalid option\n");
-        }
-    }
+//    /* startup sequence */
+//    char inp;
+//    while (pwList.file == NULL) {
+//        printf("Enter o for opening a database, c for creating one or q to quit:\n> ");
+//        scanf(" %c", &inp);
+//
+//        fgetc(stdin); // remove whitespace for further scanning.
+//
+//        if (inp == 'o') {
+//            get_db_name(pwList.filename);
+//            unlock_database(&pwList);
+//            if(pwList.file == NULL){
+//                continue;
+//            }
+//        } else if (inp == 'c') {
+//            get_db_name(pwList.filename);
+//
+//            /* check if file already exists */
+//            pwList.file = fopen(pwList.filename, "r");
+//            if (pwList.file != NULL) {
+//                printf("File already exists\n");
+//                fclose(pwList.file);
+//                pwList.file = NULL;
+//                pwList.filename = NULL;
+//                continue;
+//            }
+//
+//            /* create new file */
+//            pwList.file = fopen(pwList.filename, "w");
+//            pwList.entry_count = 0;
+//            if (pwList.file == NULL) {
+//                perror("Error creating file");
+//                continue;
+//            }
+//            /* reopen file in update mode */
+//            fclose(pwList.file);
+//            pwList.file = fopen(pwList.filename, "r+");
+//
+//            request_new_master_password(pwList.master_pw);
+//            save_master_pw(&pwList, pwList.master_pw);
+//
+//            printf("Database created successfully\n");
+//
+//        } else if (inp == 'q') {
+//            printf("quitting\n");
+//            return 0;
+//        } else {
+//            printf("not a valid option\n");
+//            continue;
+//        }
+//    }
+//
+//    /* main sequence */
+//    bool running = true;
+//    printf("Enter a command. Valid commands can be displayed with 'h'\n");
+//    while (running) {
+//        printf("> ");
+//        getchar(); // remove whitespace
+//        inp = getchar();
+//        switch (inp) {
+//            case 'e': {
+//                char key[MAX_KEY_LEN], val[MAX_VAL_LEN];
+//                char *scanf_arg[10];
+//
+//                sprintf(scanf_arg, "%%%ds", MAX_KEY_LEN - 1); // construct format string
+//                printf("Enter the key:");
+//                scanf(scanf_arg, key);
+//
+//                sprintf(scanf_arg, "%%%ds", MAX_VAL_LEN - 1);
+//                printf("Enter the value:");
+//                scanf(scanf_arg, val);
+//
+//                set_entry(&pwList, key, val);
+//
+//                break;
+//            }
+//            case 'q':
+//                printf("quitting...\n");
+//                running = false;
+//                break;
+//            case 'r':
+//                printf("remove not implemented yet\n");
+//                break;
+//            case 'h':
+//                printf("Summary of valid character inputs:\ne - edit database\nr - remove entry\nq - quit application\nh - help\n");
+//                break;
+//            default:
+//                printf("Invalid option\n");
+//        }
+//    }
 
     fclose(pwList.file);
     pwList.file = NULL;
@@ -217,3 +233,7 @@ static void request_new_master_password(unsigned char* output){
     }
 }
 
+
+static void init_application(){
+    srand(time(NULL));   // rng initialization
+}
