@@ -259,7 +259,9 @@ void save_master_pw(pw_list_t *pwList, char *new_pw) {
 
 
 /**
- * Encrypt a pw file.
+ *
+ * @param pwList
+ * @return
  */
 int save_to_file(const pw_list_t *pwList){
     FILE* temp = fopen("temp.txt", "w");
