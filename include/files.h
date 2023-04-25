@@ -30,7 +30,7 @@ typedef struct pw_list
     FILE* file;                    //!< File pointer to the original file
     unsigned char* master_pw;      //!< Master password from this file
     int entry_count;               //!< Number of entries in pw file including master
-    unsigned char * content;       //!< All unencrypted entries
+    unsigned char* content;        //!< All unencrypted entries
 }pw_list_t;
 
 
@@ -42,6 +42,7 @@ long get_entry(pw_list_t *pwList, unsigned char *str, const unsigned char *key);
 bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char *val);
 void save_master_pw(pw_list_t *pwList, char *new_pw);
 bool check_master_pw(pw_list_t *pwList, const char *master_pw);
-
+int load_pw_file(const pw_list_t *pwList);
+int save_to_file(const pw_list_t *pwList);
 
 #endif //PW_MANAGER_FILES_H

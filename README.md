@@ -25,3 +25,9 @@ must be made between write speed and file size when handling insertions.
 - AES256 file encryption
 - Password generation
 - Password copying to clipboard
+- Secure salt generation
+
+## External Dependencies
+
+- Libsodium
+- OpenSSL

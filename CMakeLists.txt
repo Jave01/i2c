@@ -7,7 +7,7 @@ include_directories(include)
 include_directories(/usr/local/include)
 include_directories(libsodium-stable/src/libsodium/include)
 
-add_executable(pw_manager main.c include/main.h files.c include/files.h crypto.c crypto.h password.c password.h)
+add_executable(pw_manager main.c include/main.h files.c include/files.h crypto.c include/crypto.h password.c include/password.h)
 
 find_package(OpenSSL REQUIRED)
 

@@ -1,7 +1,7 @@
 # ninja log v5
 1	24	1682420653328450775	CMakeFiles/pw_manager.dir/password.c.o	f2b5b5a7e131c400
 0	43	1682436093253806527	CMakeFiles/pw_manager.dir/main.c.o	2bba311c2cb59af4
-0	29	1682438989545003763	build.ninja	11624d7cbed1d163
+0	29	1682439727682097647	build.ninja	11624d7cbed1d163
 0	20	1679324043139515105	CMakeFiles/pw_manager.dir/pw_file_handling.c.o	2f55ac76977fd4a0
 43	72	1682436297740078422	pw_manager	af09a7bd49ce9741
 0	27	1679313828255485769	CMakeFiles/pw_manager.dir/file_handler.c.o	a4bc9f8282e0c9a9

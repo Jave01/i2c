@@ -17,6 +17,7 @@
 
 /* custom imports */
 #include "files.h"
+#include "crypto.h"
 
 
 /**********************************************************************************************
@@ -254,4 +255,166 @@ void save_master_pw(pw_list_t *pwList, char *new_pw) {
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         fprintf(pwList->file, "%02x", hash[i]);
     }
+}
+
+
+/**
+ * Encrypt a pw file.
+ */
+int save_to_file(const pw_list_t *pwList){
+    FILE* temp = fopen("temp.txt", "w");
+
+    /* "opaque" encryption, decryption ctx structures that libcrypto uses to record
+   status of enc/dec operations */
+    EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
+
+    /* 8 bytes to salt the key_data during key generation. This is an example of
+       compiled in salt. We just read the bit pattern created by these two 4 byte
+       integers on the stack as 64 bits of continuous salt material -
+       of course this only works if sizeof(int) >= 4 */
+    unsigned int salt[] = {12345, 54321};
+    unsigned char *key_data;
+    int key_data_len, i;
+
+    /* the key_data is read from the argument list */
+    key_data = (unsigned char *)pwList->master_pw;
+    key_data_len = strlen(key_data);
+//    printf("\nKey data1: %s, salt: %d, %d\n", key_data, salt[0], salt[1]);
+
+    /* gen key and iv. init the cipher ctx object */
+    if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
+        printf("Couldn't initialize AES cipher\n");
+        return -1;
+    }
+
+    /* Copy master password from old to new file */
+    rewind(pwList->file);
+    rewind(temp);
+    char stored_hash_str[SHA256_DIGEST_LENGTH * 2 + 1];
+    fgets(stored_hash_str, sizeof(stored_hash_str), pwList->file);
+    stored_hash_str[strcspn(stored_hash_str, "\n")] = '\0'; // remove trailing newline
+//    printf("read hash string: %s\n\n", stored_hash_str);
+    fprintf(temp, stored_hash_str);
+
+
+    /* get content size */
+    fseek(pwList->file, 0, SEEK_END);
+    unsigned long file_size = ftell(pwList->file);
+
+    unsigned long hash_size = SHA256_DIGEST_LENGTH * 2;
+    unsigned long content_size = file_size - hash_size;
+    fseek(pwList->file, hash_size, SEEK_SET);
+
+    // Allocate memory for the content buffer
+    unsigned char* content = malloc(sizeof(char) * content_size);
+//    memset(content, 0, buffer_size * sizeof(char));
+    if (content == NULL) {
+        printf("Error allocating memory\n");
+        return 1;
+    }
+
+    // Read the content into the buffer
+    size_t bytes_read = fread(content, sizeof(unsigned char), content_size, pwList->file);
+    if (bytes_read != content_size) {
+        printf("Error reading file\n");
+        free(content);
+        return 1;
+    }
+
+    printf("-- Before encryption ------ %s\n-------------------\n\n", content);
+
+    unsigned char *ciphertext;
+    int len = strlen(content);
+
+    printf("strlen: %d\n", strlen(content));
+    ciphertext = aes_encrypt(en, (unsigned char *)content, &len);
+    printf("length: %d, size: %d, len: %d\n", strlen(ciphertext), sizeof(ciphertext), len);
+//    printf("\nNumbers of enc string: ");
+//    for (int i = 0; i < len; ++i) {
+//        printf("%d ", ciphertext[i]);
+//    }
+//    printf("\n");
+
+    fwrite(ciphertext, 1, len, temp);
+
+    free(ciphertext);
+
+    EVP_CIPHER_CTX_free(en);
+    EVP_CIPHER_CTX_free(de);
+
+    fclose(temp);
+
+}
+
+
+/**
+ * load a pw file
+ * @param pwList pw list struct
+ * @return
+ */
+int load_pw_file(const pw_list_t *pwList){
+    FILE* temp = fopen("temp.txt", "r");
+
+    /* get file size */
+    fseek(temp, 0, SEEK_END);
+    unsigned long file_size = ftell(temp);
+
+    unsigned long hash_size = SHA256_DIGEST_LENGTH * 2;
+    unsigned long content_size = file_size - hash_size;
+    fseek(temp, hash_size, SEEK_SET);
+
+    /* store the encrypted values from the file in a string */
+    unsigned char enc_file_text[content_size + 1];
+    int bytes_read = fread(enc_file_text, 1, content_size, temp);
+    if (bytes_read != content_size) {
+        printf("Error reading file\n");
+        return 1;
+    }
+
+    /* "opaque" encryption, decryption ctx structures that libcrypto uses to record
+   status of enc/dec operations */
+    EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
+
+    /* 8 bytes to salt the key_data during key generation. This is an example of
+       compiled in salt. We just read the bit pattern created by these two 4 byte
+       integers on the stack as 64 bits of contigous salt material -
+       of course this only works if sizeof(int) >= 4 */
+    unsigned int salt[] = {12345, 54321};
+    unsigned char *key_data;
+    int key_data_len;
+
+    key_data = (unsigned char *)pwList->master_pw;
+    key_data_len = strlen(key_data);
+
+    /* gen key and iv. init the cipher ctx object */
+    if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
+        printf("Couldn't initialize AES cipher\n");
+        return -1;
+    }
+
+    int len = content_size;
+    unsigned char *plaintext;
+    plaintext = (unsigned char*) aes_decrypt(de, enc_file_text, &len);
+
+//    printf("Nums: ");
+//    for (int i = 0; i < sizeof(enc_file_text); ++i) {
+//        printf("%d ", enc_file_text[i]);
+//    }
+//    printf("\nlen: %d\n", len);
+//    unsigned long slen = strlen(plaintext);
+
+//    printf("\n--- encrypted ------ %s\n--------------\nslen: %ld, len: %d\n", plaintext, slen, len);
+    for (int i = 0; i < len; ++i) {
+        printf("%c", plaintext[i]);
+    }
+
+
+    EVP_CIPHER_CTX_free(en);
+    EVP_CIPHER_CTX_free(de);
+
+    fclose(temp);
+
+    free(plaintext);
 }
