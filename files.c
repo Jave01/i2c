@@ -208,31 +208,24 @@ bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char
 
 
 /** Check if entered string matches the master password saved in the file.
- * Uses SHA256 on the given string and compares it with the first string in the file
+ * Uses SHA256 on the given string and compares it with the first SHA256_DIGEST_LENGTH-bytes
  * which should be the stored master password.
- * @param pwList a pointer to pw_list struct
+ * @param pwList pw_list struct
  * @param master_pw the entered password in plain text
- * @return true if hashes match false otherwise
+ * @return true if hashes match, false otherwise
  */
-bool check_master_pw(pw_list_t *pwList, const char *master_pw) {
+bool check_master_pw(const pw_list_t *pwList, const char *master_pw) {
     rewind(pwList->file);
-    /* --- read in and compare --- */
-    // Read in the stored hash from the file
-    unsigned char stored_hash[SHA256_DIGEST_LENGTH];
-    char stored_hash_str[2 * SHA256_DIGEST_LENGTH + 1];
-    fscanf(pwList->file, "%s", stored_hash_str);
-
-    // Convert the stored hash from hexadecimal string to raw bytes
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        sscanf(stored_hash_str + 2*i, "%2hhx", &stored_hash[i]);
-    }
+    /* read in and compare */
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    fread(hash, 1, sizeof(hash), pwList->file);
 
     // Compute the hash of the new string
     unsigned char new_hash[SHA256_DIGEST_LENGTH];
     SHA256((const unsigned char*)master_pw, strlen(master_pw), new_hash);
 
     // Compare the two hashes
-    if (memcmp(stored_hash, new_hash, SHA256_DIGEST_LENGTH) == 0) {
+    if (memcmp(hash, new_hash, SHA256_DIGEST_LENGTH) == 0) {
         return true;
     }else{
         return false;
@@ -240,7 +233,7 @@ bool check_master_pw(pw_list_t *pwList, const char *master_pw) {
 }
 
 
-/** Save the new password as hash in the file.
+/** Save the new password hash in binary to the file.
  * The given string gets hashed with SHA256 and written at the beginning of the file, where
  * the master pw should be stored.
  * @param pwList a pointer to pw_list struct
@@ -248,22 +241,20 @@ bool check_master_pw(pw_list_t *pwList, const char *master_pw) {
  */
 void save_master_pw(pw_list_t *pwList, char *new_pw) {
     strcpy(pwList->master_pw, new_pw);
-    unsigned char hash[SHA256_DIGEST_LENGTH+1];
+    unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
     SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
 
     rewind(pwList->file);
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        fprintf(pwList->file, "%02x", hash[i]);
-    }
+    fwrite(hash, 1, sizeof(hash), pwList->file);
 }
 
 
-/**
- *
- * @param pwList
- * @return
+/** Encrypts the pwList content and saves it to a file.
+ * Saves the master password hash and the AES256-encrypted content to file.
+ * @param pwList pointer to pw_list_t struct
+ * @return error code
  */
-int save_to_file(const pw_list_t *pwList){
+int save_to_file(pw_list_t *pwList){
     FILE* temp = fopen("temp.txt", "w");
 
     /* "opaque" encryption, decryption ctx structures that libcrypto uses to record
@@ -271,18 +262,13 @@ int save_to_file(const pw_list_t *pwList){
     EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
 
-    /* 8 bytes to salt the key_data during key generation. This is an example of
-       compiled in salt. We just read the bit pattern created by these two 4 byte
-       integers on the stack as 64 bits of continuous salt material -
-       of course this only works if sizeof(int) >= 4 */
     unsigned int salt[] = {12345, 54321};
     unsigned char *key_data;
-    int key_data_len, i;
+    int key_data_len;
 
-    /* the key_data is read from the argument list */
+    /* get the password data */
     key_data = (unsigned char *)pwList->master_pw;
     key_data_len = strlen(key_data);
-//    printf("\nKey data1: %s, salt: %d, %d\n", key_data, salt[0], salt[1]);
 
     /* gen key and iv. init the cipher ctx object */
     if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
@@ -290,53 +276,15 @@ int save_to_file(const pw_list_t *pwList){
         return -1;
     }
 
-    /* Copy master password from old to new file */
-    rewind(pwList->file);
+    /* Save master pw */
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
     rewind(temp);
-    char stored_hash_str[SHA256_DIGEST_LENGTH * 2 + 1];
-    fgets(stored_hash_str, sizeof(stored_hash_str), pwList->file);
-    stored_hash_str[strcspn(stored_hash_str, "\n")] = '\0'; // remove trailing newline
-//    printf("read hash string: %s\n\n", stored_hash_str);
-    fprintf(temp, stored_hash_str);
-
-
-    /* get content size */
-    fseek(pwList->file, 0, SEEK_END);
-    unsigned long file_size = ftell(pwList->file);
-
-    unsigned long hash_size = SHA256_DIGEST_LENGTH * 2;
-    unsigned long content_size = file_size - hash_size;
-    fseek(pwList->file, hash_size, SEEK_SET);
-
-    // Allocate memory for the content buffer
-    unsigned char* content = malloc(sizeof(char) * content_size);
-//    memset(content, 0, buffer_size * sizeof(char));
-    if (content == NULL) {
-        printf("Error allocating memory\n");
-        return 1;
-    }
-
-    // Read the content into the buffer
-    size_t bytes_read = fread(content, sizeof(unsigned char), content_size, pwList->file);
-    if (bytes_read != content_size) {
-        printf("Error reading file\n");
-        free(content);
-        return 1;
-    }
-
-    printf("-- Before encryption ------ %s\n-------------------\n\n", content);
+    fwrite(hash, 1, sizeof(hash), temp);
 
     unsigned char *ciphertext;
-    int len = strlen(content);
-
-    printf("strlen: %d\n", strlen(content));
-    ciphertext = aes_encrypt(en, (unsigned char *)content, &len);
-    printf("length: %d, size: %d, len: %d\n", strlen(ciphertext), sizeof(ciphertext), len);
-//    printf("\nNumbers of enc string: ");
-//    for (int i = 0; i < len; ++i) {
-//        printf("%d ", ciphertext[i]);
-//    }
-//    printf("\n");
+    int len = strlen(pwList->content);
+    ciphertext = aes_encrypt(en, (unsigned char *)pwList->content, &len);
 
     fwrite(ciphertext, 1, len, temp);
 
@@ -347,42 +295,40 @@ int save_to_file(const pw_list_t *pwList){
 
     fclose(temp);
 
+    /* replacing the old file */
+    fclose(pwList->file);
+    remove(pwList->filename);
+    rename("temp.txt", pwList->filename);
+    pwList->file = fopen(pwList->filename, "r+");
 }
 
 
-/**
- * load a pw file
+/** Load a pw file.
+ * Load and decrypt the content of a pw file and save it in the pwList->content variable.
  * @param pwList pw list struct
- * @return
+ * @return error code
  */
-int load_pw_file(const pw_list_t *pwList){
-    FILE* temp = fopen("temp.txt", "r");
-
+int load_pw_file(pw_list_t *pwList){
     /* get file size */
-    fseek(temp, 0, SEEK_END);
-    unsigned long file_size = ftell(temp);
+    fseek(pwList->file, 0, SEEK_END);
+    unsigned long file_size = ftell(pwList->file);
+    unsigned int header_length = SHA256_DIGEST_LENGTH;
+    unsigned long content_size = file_size - header_length;
+    fseek(pwList->file, header_length, SEEK_SET);
 
-    unsigned long hash_size = SHA256_DIGEST_LENGTH * 2;
-    unsigned long content_size = file_size - hash_size;
-    fseek(temp, hash_size, SEEK_SET);
-
-    /* store the encrypted values from the file in a string */
-    unsigned char enc_file_text[content_size + 1];
-    int bytes_read = fread(enc_file_text, 1, content_size, temp);
+    /* store the encrypted values from the file in an array */
+    unsigned char enc_file_text[content_size];
+    int bytes_read = fread(enc_file_text, 1, content_size, pwList->file);
     if (bytes_read != content_size) {
         printf("Error reading file\n");
         return 1;
     }
 
     /* "opaque" encryption, decryption ctx structures that libcrypto uses to record
-   status of enc/dec operations */
+        status of enc/dec operations */
     EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
 
-    /* 8 bytes to salt the key_data during key generation. This is an example of
-       compiled in salt. We just read the bit pattern created by these two 4 byte
-       integers on the stack as 64 bits of contigous salt material -
-       of course this only works if sizeof(int) >= 4 */
     unsigned int salt[] = {12345, 54321};
     unsigned char *key_data;
     int key_data_len;
@@ -400,23 +346,14 @@ int load_pw_file(const pw_list_t *pwList){
     unsigned char *plaintext;
     plaintext = (unsigned char*) aes_decrypt(de, enc_file_text, &len);
 
-//    printf("Nums: ");
-//    for (int i = 0; i < sizeof(enc_file_text); ++i) {
-//        printf("%d ", enc_file_text[i]);
-//    }
-//    printf("\nlen: %d\n", len);
-//    unsigned long slen = strlen(plaintext);
-
-//    printf("\n--- encrypted ------ %s\n--------------\nslen: %ld, len: %d\n", plaintext, slen, len);
-    for (int i = 0; i < len; ++i) {
-        printf("%c", plaintext[i]);
-    }
-
+    pwList->content = malloc(sizeof(unsigned char) * (len+1));
+    strncpy(pwList->content, plaintext, len);
+    pwList->content[len] = '\0';
 
     EVP_CIPHER_CTX_free(en);
     EVP_CIPHER_CTX_free(de);
 
-    fclose(temp);
-
     free(plaintext);
+
+    return 0;
 }
