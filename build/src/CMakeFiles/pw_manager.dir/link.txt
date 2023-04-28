@@ -1,0 +1,1 @@
+/usr/bin/gcc-12 -g -rdynamic CMakeFiles/pw_manager.dir/main.c.o CMakeFiles/pw_manager.dir/crypto.c.o CMakeFiles/pw_manager.dir/files.c.o CMakeFiles/pw_manager.dir/password.c.o -o pw_manager  -lsodium /usr/lib/x86_64-linux-gnu/libcrypto.so 
