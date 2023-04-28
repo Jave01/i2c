@@ -1,0 +1,5 @@
+/home/dave/Documents/dev/vscode/c/i2c_project_code/build/CMakeFiles/edit_cache.dir
+/home/dave/Documents/dev/vscode/c/i2c_project_code/build/CMakeFiles/rebuild_cache.dir
+/home/dave/Documents/dev/vscode/c/i2c_project_code/build/src/CMakeFiles/pw_manager.dir
+/home/dave/Documents/dev/vscode/c/i2c_project_code/build/src/CMakeFiles/edit_cache.dir
+/home/dave/Documents/dev/vscode/c/i2c_project_code/build/src/CMakeFiles/rebuild_cache.dir

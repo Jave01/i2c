@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/pw_manager.dir/src/main.cpp.o -o pw_manager  -lsodium /usr/lib/x86_64-linux-gnu/libcrypto.so 
