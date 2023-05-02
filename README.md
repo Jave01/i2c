@@ -32,5 +32,5 @@ The (plaintext) entries are newline-terminated strings chained one after another
 
 ## External Dependencies
 
--   Libsodium
--   OpenSSL
+-   [Libsodium](https://libsodium.gitbook.io/doc/)
+-   [OpenSSL](https://www.openssl.org/)
