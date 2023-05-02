@@ -2,7 +2,7 @@
  * Filename: files.c
  * Author: David Jäggli
  * Date: 20.3.2023
- * Description: Standard functions for reading, editing and data collecting of
+ * Description: Functions for reading, editing and data collecting of
  *              password manager files.
  */
 
@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <openssl/sha.h>
+#include <sodium.h>
+#include <math.h>
 
 /* custom imports */
 #include "files.h"
@@ -31,11 +33,12 @@
 int get_entry_count(const pw_list_t *pwList){
     int lines=0;
 
-    rewind(pwList->file);
-
-    char buffer[MAX_LINE_LEN] = {0};
-    while (fgets(buffer, MAX_LINE_LEN, pwList->file) != NULL) {
-        lines++;
+    for (size_t i = 0; i < strlen(pwList->entries); i++)
+    {
+        if (pwList->entries[i] == '\n')
+        {
+            lines++;
+        }   
     }
 
     return lines;
@@ -47,48 +50,42 @@ int get_entry_count(const pw_list_t *pwList){
  * @param pwList  pointer to pw_file object
  * @param str destination where the value gets written into
  * @param key key to search for in the file
- * @return offset in the file, where the string is found
+ * @return offset in the pwList content string, -1 if not found
 */
-long get_entry(pw_list_t *pwList, unsigned char *str, const unsigned char *key){
+long get_entry_value(const pw_list_t *pwList, unsigned char *str, const unsigned char *key){
     int range = get_entry_count(pwList);
+    unsigned char* current_entry = pwList->entries;
+    u_int8_t key_len = strlen(key);
 
-    rewind(pwList->file);
-    char c;
-    for (int i = 0; i < range; i++)
+    for (size_t i = 0; i < range; i++)
     {
-        for (int j = 0; j <= strlen(key); j++)
-        {
-            c = fgetc(pwList->file);
-            if (c != key[j])
+        if(strncmp(current_entry, key, key_len)==0){
+            if (current_entry[strlen(key)] == ':')
             {
-                if (c == ':'){
-                    long pos = ftell(pwList->file);
-                    if(fgets(str, MAX_VAL_LEN, pwList->file) != NULL){
-                        return pos;
-                    } else {
-                        return 0;
-                    }
-                }
-                else{
-                    break;
-                }
+                current_entry += key_len + 1;
+                unsigned char* stop = (unsigned char*) strchr(current_entry, '\n');
+                long val_size = stop - current_entry;
+                strncpy(str, current_entry, val_size);
+                str[val_size] = '\0';
+                return current_entry - pwList->entries; // offset to value
             }
         }
-        while ((c = fgetc(pwList->file)) != '\n' && c != EOF);// go to next entry
+        current_entry = strchr(current_entry, '\n') + 1;
     }
-    rewind(pwList->file);
-    return 0;
+    
+    return -1;
 }
 
 
 /** Change or create an entry in pw list.
- * If the entry key exists, the value gets overwritten, if it doesn't a new one is created.
- * @param pw_list a pointer to pw_list struct
+ * If the entry key exists, the value gets overwritten, if it doesn't, a new one is created.
+ * @param pwList a pointer to pwList struct
  * @param key the key of the entry
- * @param val the value of the entry
+ * @param val the new value of the entry
  * @return bool if the action was successful
 */
-bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char *val){
+bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char *val){
+    
     if (strlen(key) > MAX_KEY_LEN || strlen(key) < 1){
         printf("Key size invalid (%ld/%d chars)\n", strlen(key), MAX_KEY_LEN);
         return false;
@@ -97,111 +94,50 @@ bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char
         return false;
     }
 
-    /* some variables for determining the (maybe) existing entry */
-    char entry_value[MAX_LINE_LEN];
-    long entry_offset = get_entry(pw_list, entry_value, key);
-
-    rewind(pw_list->file);
-
-    /* create new entry_value if it doesn't exist */
-    if (!entry_offset)
-    {
-        bool inp_valid = false;
-        while(!inp_valid) {
-            printf("Entry does not exist, create new one? [y/N]:");
-            getchar(); // remove whitespace
-            unsigned char inp = getchar();
-            if (inp == 'n' || inp == 'N'){
-                printf("Exiting edit mode\n");
-                return false;
-            } else if (!(inp == 'y')){
-                printf("Input not valid\n");
-            } else{
-                inp_valid = true;
-            }
-        }
-        fclose(pw_list->file);
-        pw_list->file = fopen(pw_list->filename, "a+");
-
-        /* insert newline if there isn't one */
-        fseek(pw_list->file, 0, SEEK_END); // seek to end of file
-        if (ftell(pw_list->file) > 0) { // check if file is non-empty
-            fseek(pw_list->file, -1, SEEK_END);
-            char c = fgetc(pw_list->file);
-            if (c != '\n') {
-                fputc('\n', pw_list->file);
-            }
-        }
-
-        /* add content */
-        if (fputs(key, pw_list->file) == EOF ||
-            fputc(':', pw_list->file) == EOF ||
-            fputs(val, pw_list->file) == EOF) {
-            perror("Error while writing to file");
-        }
-
-        fclose(pw_list->file);
-
-        pw_list->file = fopen(pw_list->filename, "r+");
-        pw_list->entry_count++;
-
-        printf("added content successfully\n");
-
-        return true;
-
-    } else {
-        /* If entry does exist, copy the file leading file content to a temp file,
-         * insert the new data and append the remaining data. The original file will be
-         * deleted and the temp file renamed to the original filename
-         * copy content */
-        bool inp_valid = false;
-        while(!inp_valid) {
-            printf("Entry exists, do you want to update it's value? [y/n]:");
-            getchar(); // remove whitespace
-            char inp = getchar();
-            if (inp == 'n'){
-                printf("Exiting edit mode\n");
-                return false;
-            } else if (!(inp == 'y')){
-                printf("Input not valid\n");
-            } else{
-                inp_valid = true;
-            }
-        }
-
-        FILE* ftemp = fopen("temp.txt", "w");
-
-        /* copy content up to the point where the entry is stored */
-        rewind(pw_list->file);
-        char c;
-        for (int i = 0; i < entry_offset; ++i) {
-            c = fgetc(pw_list->file);
-            fputc(c, ftemp);
-        }
-
-        fputs(val, ftemp); // insert new value
-
-        while((c = fgetc(pw_list->file)) != '\n'); // skip to the end of the old value
-
-        fputc(c, ftemp); // insert the missing '\n' because it got skipped too in the line above
-
-        while((c = fgetc(pw_list->file)) != EOF){
-            fputc(c, ftemp);
-        }
-
-        /* replace old file */
-        fclose(ftemp);
-        fclose(pw_list->file);
-        remove(pw_list->filename);
-        rename("temp.txt", pw_list->filename);
-
-        pw_list->file = fopen(pw_list->filename, "r+");
-        if(pw_list->file == NULL){
-            perror("Error while renaming temp file\n");
+    if (strlen(pwList->entries) + strlen(key) + strlen(val) + 2 > pwList->size * ENTRIES_BLOCK_SIZE){
+        // if existing values + new values are bigger than the allocated size, the allocated size gets increased by ENTRIES_BLOCK_SIZE
+        pwList->size++;
+        unsigned char* new_ptr = realloc(pwList->entries, pwList->size * ENTRIES_BLOCK_SIZE * sizeof(unsigned char));
+        if (new_ptr == NULL){
+            perror("Error while reallocating memory");
             return false;
         }
+        pwList->entries = new_ptr;
+    }
+    
+    /* some variables for determining the (possibly) existing entry */
+    unsigned char* entry_value = 0;
+    entry_value = calloc(MAX_VAL_LEN, sizeof(unsigned char));
+    if(entry_value == NULL){
+        perror("Error while allocating memory");
+        return false;
+    }
+    long entry_offset = get_entry_value(pwList, entry_value, key);
+    
+    // if the entry exists, the value gets overwritten
+    // to do so, the other parts need to be copied to a new string
+    if (entry_offset >= 0)
+    {
+        unsigned char* new_entries = calloc(pwList->size * ENTRIES_BLOCK_SIZE, sizeof(unsigned char));
 
-        printf("value updated successfully\n");
+        // copy values before old value
+        strncpy(new_entries, pwList->entries, entry_offset);
+
+        //  append new value
+        strcat(new_entries, val);
+        strcat(new_entries, "\n");
+
+        // copy values after old value
+        strcat(new_entries, pwList->entries + entry_offset + strlen(entry_value) + 1);
+
+        strncpy(pwList->entries, new_entries, pwList->size * ENTRIES_BLOCK_SIZE);
+    }
+    else{
+        // if the entry doesn't exist, it gets appended to the end of the string
+        strcat(pwList->entries, key);
+        strcat(pwList->entries, ":");
+        strcat(pwList->entries, val);
+        strcat(pwList->entries, "\n");
     }
     return true;
 }
@@ -210,7 +146,7 @@ bool set_entry(pw_list_t* pw_list, const unsigned char *key, const unsigned char
 /** Check if entered string matches the master password saved in the file.
  * Uses SHA256 on the given string and compares it with the first SHA256_DIGEST_LENGTH-bytes
  * which should be the stored master password.
- * @param pwList pw_list struct
+ * @param pwList pwList struct
  * @param master_pw the entered password in plain text
  * @return true if hashes match, false otherwise
  */
@@ -236,7 +172,7 @@ bool check_master_pw(const pw_list_t *pwList, const char *master_pw) {
 /** Save the new password hash in binary to the file.
  * The given string gets hashed with SHA256 and written at the beginning of the file, where
  * the master pw should be stored.
- * @param pwList a pointer to pw_list struct
+ * @param pwList a pointer to pwList struct
  * @param new_pw the new password in plain text
  */
 void save_master_pw(pw_list_t *pwList, char *new_pw) {
@@ -249,7 +185,7 @@ void save_master_pw(pw_list_t *pwList, char *new_pw) {
 }
 
 
-/** Encrypts the pwList content and saves it to a file.
+/** Encrypts the pwList entries and saves it to a file.
  * Saves the master password hash and the AES256-encrypted content to file.
  * @param pwList pointer to pw_list_t struct
  * @return error code
@@ -261,14 +197,14 @@ int save_to_file(pw_list_t *pwList){
    status of enc/dec operations */
     EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
+    
+    /* Generate salt */
+    unsigned char salt[SALT_BYTES];
+    randombytes_buf(&salt, sizeof(salt));
 
-    unsigned int salt[] = {12345, 54321};
-    unsigned char *key_data;
-    int key_data_len;
-
-    /* get the password data */
-    key_data = (unsigned char *)pwList->master_pw;
-    key_data_len = strlen(key_data);
+    /* Get the password data */
+    unsigned char *key_data = (unsigned char *)pwList->master_pw;
+    int key_data_len = strlen(key_data);
 
     /* gen key and iv. init the cipher ctx object */
     if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
@@ -276,16 +212,17 @@ int save_to_file(pw_list_t *pwList){
         return -1;
     }
 
-    /* Save master pw */
+    /* Save master pw and salt*/
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
     rewind(temp);
     fwrite(hash, 1, sizeof(hash), temp);
+    fwrite(salt, 1, sizeof(salt), temp);
 
+    /* Encrypt entries and save them */
     unsigned char *ciphertext;
-    int len = strlen(pwList->content);
-    ciphertext = aes_encrypt(en, (unsigned char *)pwList->content, &len);
-
+    int len = strlen(pwList->entries);
+    ciphertext = aes_encrypt(en, (unsigned char *)pwList->entries, &len);
     fwrite(ciphertext, 1, len, temp);
 
     free(ciphertext);
@@ -308,15 +245,18 @@ int save_to_file(pw_list_t *pwList){
  * @param pwList pw list struct
  * @return error code
  */
-int load_pw_file(pw_list_t *pwList){
+int load_pw_file_content(pw_list_t *pwList){
     /* get file size */
     fseek(pwList->file, 0, SEEK_END);
     unsigned long file_size = ftell(pwList->file);
-    unsigned int header_length = SHA256_DIGEST_LENGTH;
+    unsigned int header_length = SHA256_DIGEST_LENGTH + SALT_BYTES;
     unsigned long content_size = file_size - header_length;
-    fseek(pwList->file, header_length, SEEK_SET);
 
     /* store the encrypted values from the file in an array */
+    fseek(pwList->file, SHA256_DIGEST_LENGTH, SEEK_SET);
+    unsigned char salt[SALT_BYTES];
+    fread(salt, 1, sizeof(salt), pwList->file);
+
     unsigned char enc_file_text[content_size];
     int bytes_read = fread(enc_file_text, 1, content_size, pwList->file);
     if (bytes_read != content_size) {
@@ -329,7 +269,6 @@ int load_pw_file(pw_list_t *pwList){
     EVP_CIPHER_CTX* en = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX* de = EVP_CIPHER_CTX_new();
 
-    unsigned int salt[] = {12345, 54321};
     unsigned char *key_data;
     int key_data_len;
 
@@ -345,10 +284,25 @@ int load_pw_file(pw_list_t *pwList){
     int len = content_size;
     unsigned char *plaintext;
     plaintext = (unsigned char*) aes_decrypt(de, enc_file_text, &len);
+    unsigned char* entries = (unsigned char*) (plaintext + 1); // remove leading newline
 
-    pwList->content = malloc(sizeof(unsigned char) * (len+1));
-    strncpy(pwList->content, plaintext, len);
-    pwList->content[len] = '\0';
+    unsigned int raw_len = strlen(entries) + 1;
+    unsigned int blocks = (raw_len / ENTRIES_BLOCK_SIZE) + 1;
+    size_t memory_size = blocks * ENTRIES_BLOCK_SIZE;
+
+    /* Allocate memory and save the content */
+    free(pwList->entries); // Free the previously allocated memory
+    pwList->entries = calloc(blocks * ENTRIES_BLOCK_SIZE, sizeof(unsigned char));
+    if (pwList->entries == NULL) {
+        printf("Error allocating memory\n");
+        return 1;
+    }
+
+    pwList->size = blocks;
+    strncpy(pwList->entries, entries, len);
+    pwList->entries[len] = '\0';
+
+    pwList->entry_count = get_entry_count(pwList);
 
     EVP_CIPHER_CTX_free(en);
     EVP_CIPHER_CTX_free(de);
