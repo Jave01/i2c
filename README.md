@@ -11,12 +11,12 @@ The filestructure is as follows:
 | ----------------- | --------------------- |
 | First 32 bytes    | SHA256 hash in binary |
 | 8 bytes           | Salt                  |
-| encrypted n-bytes | key1:val1\n\0         |
-| encrypted n-bytes | key2:val2\n\0         |
-| ...               | ...                   |
+| encrypted n-bytes | key1:val1\n           |
+| encrypted n-bytes | key2:val2\n           |
+| ...               | ...\0                 |
 
-Whereas the hash is the masterpassword hash and the salt is used to encrypt/decrypt the entries with AES256.
-The (plaintext) entries are null-terminated strings chained one after another.
+Whereas the hash is the master-password hash and the salt is used to encrypt/decrypt the entries with AES256.
+The (plaintext) entries are newline-terminated strings chained one after another.
 
 ## Limitations
 
