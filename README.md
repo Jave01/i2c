@@ -35,15 +35,17 @@ The (plaintext) entries are newline-terminated strings chained one after another
 -   [Libsodium](https://libsodium.gitbook.io/doc/)
 -   [OpenSSL](https://www.openssl.org/)
 
-### Libsodium Installation
+### For development: Libsodium Installation
 
 #### Linux
+
+Install libsodium with your package manager, on Debian-systems:
 
 ```bash
 sudo apt-get install libsodium-dev
 ```
 
-And the src/CMakeLists.txt should like like this:
+And the src/CMakeLists.txt should look like this:
 
 ```cmake
 find_package(OpenSSL REQUIRED)
@@ -62,7 +64,7 @@ target_link_libraries(pw_manager OpenSSL::Crypto)
 #### Windows
 
 1. Download the [libsodium-x.y.z-mingw.tar.gz](https://download.libsodium.org/libsodium/releases/) binaries and extract them to a folder of your choice.
-2. Take the contents of either the x64 or x32 folder and copy them to a folder called libsodium in the root of the project.
+2. Take the contents of either the x64 or x32 folder and copy them to a folder called libsodium in the root directory of the project.
 3. Then change your src/CMakeLists.txt to the following:
 
 ```cmake
