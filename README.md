@@ -76,3 +76,5 @@ add_executable(pw_manager main.c crypto.c files.c password.c)
 target_include_directories(pw_manager PUBLIC include)
 target_link_libraries(pw_manager PRIVATE OpenSSL::Crypto ${LIBSODIUM_DIR}/lib/libsodium.a)
 ```
+
+Also add the libsodium folder to your .gitignore file.
