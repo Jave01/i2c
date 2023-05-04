@@ -45,6 +45,32 @@ int get_entry_count(const pw_list_t *pwList){
 }
 
 
+void list_all_entries(const pw_list_t* pwList){
+    int range = get_entry_count(pwList);
+    unsigned char* current_entry = pwList->entries;
+    unsigned char* stop;
+    unsigned char* key;
+    unsigned char* val;
+
+    for (size_t i = 0; i < range; i++)
+    {
+        stop = (unsigned char*) strchr(current_entry, ':');
+        key = (unsigned char*) malloc(stop - current_entry + 1);
+        strncpy(key, current_entry, stop - current_entry);
+        key[stop - current_entry] = '\0';
+        current_entry = stop + 1;
+        stop = (unsigned char*) strchr(current_entry, '\n');
+        val = (unsigned char*) malloc(stop - current_entry + 1);
+        strncpy(val, current_entry, stop - current_entry);
+        val[stop - current_entry] = '\0';
+        current_entry = stop + 1;
+        printf("[%ld] %s: %s\n",i+1 , key, val);
+        free(key);
+        free(val);
+    }
+}
+
+
 /** Returns the value of the entry based on the key.
  * Writes the string into the str variable and returns the pointer to the value.
  * @param pwList  pointer to pw_file object
@@ -99,7 +125,9 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
         pwList->size++;
         unsigned char* new_ptr = realloc(pwList->entries, pwList->size * ENTRIES_BLOCK_SIZE * sizeof(unsigned char));
         if (new_ptr == NULL){
-            perror("Error while reallocating memory");
+            printf("\033[31m"); // set text color to red
+            perror("[!] Error while reallocating memory");
+            printf("\033[0m"); // reset text color to default
             return false;
         }
         pwList->entries = new_ptr;
@@ -109,7 +137,9 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
     unsigned char* entry_value = 0;
     entry_value = calloc(MAX_VAL_LEN, sizeof(unsigned char));
     if(entry_value == NULL){
-        perror("Error while allocating memory");
+        printf("\033[31m"); // set text color to red
+        perror("[!] Error while allocating memory");
+        printf("\033[0m"); // reset text color to default
         return false;
     }
     long entry_offset = get_entry_value(pwList, entry_value, key);
@@ -139,6 +169,7 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
         strcat(pwList->entries, val);
         strcat(pwList->entries, "\n");
     }
+    save_to_file(pwList);
     return true;
 }
 
@@ -151,8 +182,8 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
  * @return true if hashes match, false otherwise
  */
 bool check_master_pw(const pw_list_t *pwList, const char *master_pw) {
+    /* read in hash from file */
     rewind(pwList->file);
-    /* read in and compare */
     unsigned char hash[SHA256_DIGEST_LENGTH];
     fread(hash, 1, sizeof(hash), pwList->file);
 
@@ -176,7 +207,7 @@ bool check_master_pw(const pw_list_t *pwList, const char *master_pw) {
  * @param new_pw the new password in plain text
  */
 void save_master_pw(pw_list_t *pwList, char *new_pw) {
-    strcpy(pwList->master_pw, new_pw);
+    strncpy(pwList->master_pw, new_pw, strlen(new_pw));
     unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
     SHA256((const unsigned char*)pwList->master_pw, strlen(pwList->master_pw), hash);
 
@@ -208,7 +239,9 @@ int save_to_file(pw_list_t *pwList){
 
     /* gen key and iv. init the cipher ctx object */
     if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
-        printf("Couldn't initialize AES cipher\n");
+        printf("\033[31m"); // set text color to red
+        printf("[!] Couldn't initialize AES cipher\n");
+        printf("\033[0m"); // reset text color to default
         return -1;
     }
 
@@ -260,7 +293,9 @@ int load_pw_file_content(pw_list_t *pwList){
     unsigned char enc_file_text[content_size];
     int bytes_read = fread(enc_file_text, 1, content_size, pwList->file);
     if (bytes_read != content_size) {
-        printf("Error reading file\n");
+        printf("\033[31m"); // set text color to red
+        printf("[!] Error reading file\n");
+        printf("\033[0m"); // reset text color to default
         return 1;
     }
 
@@ -277,7 +312,9 @@ int load_pw_file_content(pw_list_t *pwList){
 
     /* gen key and iv. init the cipher ctx object */
     if (aes_init(key_data, key_data_len, (unsigned char *)&salt, en, de)) {
-        printf("Couldn't initialize AES cipher\n");
+        printf("\033[31m"); // set text color to red
+        printf("[!] Couldn't initialize AES cipher\n");
+        printf("\033[0m"); // reset text color to default
         return -1;
     }
 
@@ -294,7 +331,9 @@ int load_pw_file_content(pw_list_t *pwList){
     free(pwList->entries); // Free the previously allocated memory
     pwList->entries = calloc(blocks * ENTRIES_BLOCK_SIZE, sizeof(unsigned char));
     if (pwList->entries == NULL) {
-        printf("Error allocating memory\n");
+        printf("\033[31m"); // set text color to red
+        printf("[!] Error allocating memory\n");
+        printf("\033[0m"); // reset text color to default
         return 1;
     }
 
@@ -308,6 +347,8 @@ int load_pw_file_content(pw_list_t *pwList){
     EVP_CIPHER_CTX_free(de);
 
     free(plaintext);
+
+    printf("[*] Content loaded successfully\n\n");
 
     return 0;
 }
