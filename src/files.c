@@ -45,6 +45,11 @@ int get_entry_count(const pw_list_t *pwList){
 }
 
 
+/**
+ * List all entries in the pwList object.
+ * Prints the key and value of each entry.
+ * @param pwList pointer to pw_file object
+*/
 void list_all_entries(const pw_list_t* pwList){
     int range = get_entry_count(pwList);
     unsigned char* current_entry = pwList->entries;
