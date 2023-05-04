@@ -34,3 +34,49 @@ The (plaintext) entries are newline-terminated strings chained one after another
 
 -   [Libsodium](https://libsodium.gitbook.io/doc/)
 -   [OpenSSL](https://www.openssl.org/)
+
+### For development: Libsodium Installation
+
+#### Linux
+
+Install libsodium with your package manager, on Debian-systems:
+
+```bash
+sudo apt-get install libsodium-dev
+```
+
+And the src/CMakeLists.txt should look like this:
+
+```cmake
+find_package(OpenSSL REQUIRED)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBSODIUM REQUIRED libsodium)
+
+add_executable(pw_manager main.c crypto.c files.c password.c)
+
+target_include_directories(pw_manager PUBLIC include)
+target_link_libraries(pw_manager ${LIBSODIUM_LIBRARIES})
+include_directories(${LIBSODIUM_INCLUDE_DIRS})
+target_link_libraries(pw_manager OpenSSL::Crypto)
+```
+
+#### Windows
+
+1. Download the [libsodium-x.y.z-mingw.tar.gz](https://download.libsodium.org/libsodium/releases/) binaries and extract them to a folder of your choice.
+2. Take the contents of either the x64 or x32 folder and copy them to a folder called libsodium in the root directory of the project.
+3. Then change your src/CMakeLists.txt to the following:
+
+```cmake
+find_package(OpenSSL REQUIRED)
+
+set(LIBSODIUM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libsodium)
+include_directories(${LIBSODIUM_DIR}/include)
+
+add_executable(pw_manager main.c crypto.c files.c password.c)
+
+target_include_directories(pw_manager PUBLIC include)
+target_link_libraries(pw_manager PRIVATE OpenSSL::Crypto ${LIBSODIUM_DIR}/lib/libsodium.a)
+```
+
+Also add the libsodium folder to your .gitignore file.
