@@ -122,40 +122,60 @@ int main() {
     }
 
    /* main sequence */
-   printf("Enter a command. 'h' for help\n");
-   while (running) {
-       printf("> ");
-       inp = getchar();
-       fgetc(stdin); // remove whitespace for further scanning.
-       switch (inp) {
-           case 'e': {
+    printf("Enter a command. 'h' for help\n");
+    while (running) {
+        printf("> ");
+        inp = getchar();
+        fgetc(stdin); // remove whitespace for further scanning.
+        switch (inp) {
+            case 'e': {
                 unsigned char key[MAX_KEY_LEN] = {0};
                 unsigned char val[MAX_VAL_LEN] = {0};
                 get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
                 get_n_chars(val, MAX_VAL_LEN, "Enter the new value: ");
                 set_entry(&pwList, key, val);
                 break;
-           }
-           case 'q':
-               printf("\n[*] quitting...\n");
-               running = false;
-               break;
-           case 'r':
-               printf("remove not implemented yet\n");
-               break;
+            }
+            case 'q':
+                printf("\n[*] quitting...\n");
+                running = false;
+                break;
+            case 'd':
+            case 'r':{
+                unsigned char* key = malloc(sizeof(char) * MAX_KEY_LEN);
+                get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
+                remove_entry(&pwList, key);
+                break;
+                }
+            case 'g':{
+                unsigned char* key = malloc(sizeof(char) * MAX_KEY_LEN);
+                get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
+                long offset = search_entry(&pwList, key);
+                if(offset == -1){
+                    printf("Entry not found\n");
+                }else{
+                    int len = (unsigned char*) strchr(pwList.entries + offset, '\n') - (pwList.entries + offset);
+                    unsigned char* val = calloc(len + 1, sizeof(unsigned char));
+                    strncpy(val, pwList.entries + offset, len);
+                    printf("----------------\n");
+                    printf("%s\n", val);
+                    printf("----------------\n");
+                    copy_to_clipboard(val);
+                }
+                break;
+                }
             case 'l':
-               printf("All entries:\n----------------\n");
-               list_all_entries(&pwList);
-               printf("----------------\n");
-               break;
-           case 'h':
-               printf("Summary of valid character inputs:\ne - edit database\nr - remove entry\nl - list all entries\nq - quit application\nh - help\n");
-               break;
-           default:
-               printf("Invalid option\n");
+                printf("All entries:\n----------------\n");
+                list_all_entries(&pwList);
+                printf("----------------\n");
+                break;
+            case 'h':
+                printf("Summary of valid character inputs:\ne - edit database\nd - delete entry\ng - get/search for entry\nl - list all entries\nq - quit application\nh - help\n");
+                break;
+            default:
+                printf("Invalid option\n");
        }
    }
-
 
     cleanup(&pwList);
 
@@ -317,7 +337,6 @@ static void cleanup(pw_list_t *pwList){
     sodium_memzero(pwList->entries, pwList->size * ENTRIES_BLOCK_SIZE); // securely erase memory
     free(pwList->entries);
     if (pwList->file != NULL){
-        save_to_file(pwList);
         fclose(pwList->file);
         pwList->file = NULL;
     }
@@ -328,7 +347,7 @@ static void cleanup(pw_list_t *pwList){
 
 static void int_handler(int sig){
     printf("\033[31m"); // set text color to red
-    printf("\n\n[!] Received SIGINT, pw data may not be saved entirely\n\n");
+    printf("\n\n[!] Received SIGINT, pw data may be corrupted\n\n");
     printf("\033[0m"); // reset text color to default
     running = 0;
     exit(0);
