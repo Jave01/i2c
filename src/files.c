@@ -212,14 +212,6 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
 
 
 bool remove_entry(pw_list_t* pwList, const unsigned char *key){
-    // unsigned char* entry_value = 0;
-    // entry_value = calloc(MAX_VAL_LEN, sizeof(unsigned char));
-    // if(entry_value == NULL){
-    //     printf("\033[31m"); // set text color to red
-    //     printf("[!] Error while allocating memory");
-    //     printf("\033[0m"); // reset text color to default
-    //     return false;
-    // }
     long entry_offset = search_entry(pwList, key);
     if (entry_offset >= 0)
     {
