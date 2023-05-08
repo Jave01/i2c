@@ -229,7 +229,7 @@ bool remove_entry(pw_list_t* pwList, const unsigned char *key){
         return true;
     }else{
         printf("\033[31m"); // set text color to red
-        printf("[!] Entry not found");
+        printf("[!] Entry not found\n");
         printf("\033[0m"); // reset text color to default
     }
     return false;
