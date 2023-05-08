@@ -150,16 +150,11 @@ int main() {
             case 'g':{
                 unsigned char* key = malloc(sizeof(char) * MAX_KEY_LEN);
                 get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
-                long offset = search_entry(&pwList, key);
+                unsigned char* val = calloc(MAX_VAL_LEN, sizeof(unsigned char));
+                long offset = get_entry_value(&pwList, val, key);
                 if(offset == -1){
                     printf("Entry not found\n");
                 }else{
-                    int len = (unsigned char*) strchr(pwList.entries + offset, '\n') - (pwList.entries + offset);
-                    unsigned char* val = calloc(len + 1, sizeof(unsigned char));
-                    strncpy(val, pwList.entries + offset, len);
-                    printf("----------------\n");
-                    printf("%s\n", val);
-                    printf("----------------\n");
                     copy_to_clipboard(val);
                 }
                 break;
