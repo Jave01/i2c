@@ -100,9 +100,9 @@ void copy_to_clipboard(const char *str){
     char command[256];
     snprintf(command, sizeof(command), "echo '%s' | xclip -selection clipboard", str);
     system(command);
-    printf("Copied to clipboard\n");
-
 #endif
+
+printf("Copied '%s' to clipboard\n", str);
 }
 
 
