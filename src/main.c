@@ -165,7 +165,7 @@ int main() {
                 printf("----------------\n");
                 break;
             case 'h':
-                printf("Summary of valid character inputs:\ne - edit database\nd - delete entry\ng - get/search for entry\nl - list all entries\nq - quit application\nh - help\n");
+                printf("Summary of valid character inputs:\ne - edit database\nd - delete entry\ng - get/search for entry & copy to clipboard\nl - list all entries\nq - quit application\nh - help\n");
                 break;
             default:
                 printf("Invalid option\n");
@@ -239,7 +239,9 @@ static bool unlock_database(pw_list_t *pwList){
     }
 
     if(check_master_pw(pwList, pw) == true){
+        printf("\033[32m"); // set text color to green
         printf("\n[*] Password accepted\n");
+        printf("\033[0m"); // reset text color to default
         strncpy(pwList->master_pw, pw, MAX_MASTER_PW_LEN);
         load_pw_file_content(pwList);
         return true;
@@ -273,7 +275,9 @@ static void get_n_chars(char* dest, size_t n, char* prompt){
 
         int c;
         if (buf[sizeof(buf)-2] != 0){
-            printf("[*] Input too long\n");
+            printf("\033[31m"); // set text color to red
+            printf("[!] Input too long\n");
+            printf("\033[0m"); // reset text color to default
             
             /* Clear input until whitespace */
             while ((c = getchar()) != '\n' && c != EOF);
@@ -335,7 +339,9 @@ static void cleanup(pw_list_t *pwList){
         fclose(pwList->file);
         pwList->file = NULL;
     }
+    printf("\033[32m"); // set text color to green
     printf("[*] Cleanup done\n");
+    printf("\033[0m"); // reset text color to default
     running = 0;
 }
 
