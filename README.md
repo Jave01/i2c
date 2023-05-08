@@ -35,7 +35,7 @@ The (plaintext) entries are newline-terminated strings chained one after another
 -   [Libsodium](https://libsodium.gitbook.io/doc/)
 -   [OpenSSL](https://www.openssl.org/)
 
-### For development: Libsodium Installation
+### Installation for development
 
 #### Linux
 
@@ -50,14 +50,15 @@ And the src/CMakeLists.txt should look like this:
 ```cmake
 find_package(OpenSSL REQUIRED)
 
+# libsodium
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBSODIUM REQUIRED libsodium)
+include_directories(${LIBSODIUM_INCLUDE_DIRS})
 
 add_executable(pw_manager main.c crypto.c files.c password.c)
 
 target_include_directories(pw_manager PUBLIC include)
-target_link_libraries(pw_manager ${LIBSODIUM_LIBRARIES})
-include_directories(${LIBSODIUM_INCLUDE_DIRS})
+target_link_libraries(pw_manager ${LIBSODIUM_LIBRARIES} ${X11_LIBRARIES})
 target_link_libraries(pw_manager OpenSSL::Crypto)
 ```
 
