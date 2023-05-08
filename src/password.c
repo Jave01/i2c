@@ -13,7 +13,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 /* custom imports */
 #include "password.h"
