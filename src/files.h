@@ -48,5 +48,7 @@ bool check_master_pw(const pw_list_t *pwList, const char *master_pw);
 int load_pw_file_content(pw_list_t *pwList);
 int save_to_file(pw_list_t *pwList);
 void list_all_entries(const pw_list_t* pwList);
+bool remove_entry(pw_list_t *pwList, const unsigned char *key);
+long search_entry(const pw_list_t *pwList, const unsigned char *key);
 
 #endif //PW_MANAGER_FILES_H

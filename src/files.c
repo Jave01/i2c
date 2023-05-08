@@ -41,6 +41,12 @@ int get_entry_count(const pw_list_t *pwList){
         }   
     }
 
+    int last_index = strlen(pwList->entries) - 1;
+    if (pwList->entries[last_index] != '\n' && pwList->entries[last_index] != '\0')
+    {
+        lines++;
+    }
+
     return lines;
 }
 
@@ -60,7 +66,7 @@ void list_all_entries(const pw_list_t* pwList){
     for (size_t i = 0; i < range; i++)
     {
         stop = (unsigned char*) strchr(current_entry, ':');
-        key = (unsigned char*) malloc(stop - current_entry + 1);
+        key = (unsigned char*) calloc(stop - current_entry + 1, sizeof(unsigned char));
         strncpy(key, current_entry, stop - current_entry);
         key[stop - current_entry] = '\0';
         current_entry = stop + 1;
@@ -107,6 +113,32 @@ long get_entry_value(const pw_list_t *pwList, unsigned char *str, const unsigned
     return -1;
 }
 
+
+/**
+ * Returns the offset to the key in the pwList content string.
+ * If key is not found, -1 is returned.
+ * @param pwList pointer to pw_file object
+ * @param key key to search for in the file
+ * @return offset in the pwList content string, -1 if not found
+*/
+long search_entry(const pw_list_t *pwList, const unsigned char *key){
+    int range = get_entry_count(pwList);
+    unsigned char* current_entry = pwList->entries;
+    u_int8_t key_len = strlen(key);
+
+    for (size_t i = 0; i < range; i++)
+    {
+        if(strncmp(current_entry, key, key_len)==0){
+            if (current_entry[strlen(key)] == ':')
+            {
+                return current_entry - pwList->entries; // offset to value
+            }
+        }
+        current_entry = strchr(current_entry, '\n') + 1;
+    }
+    
+    return -1;
+}
 
 /** Change or create an entry in pw list.
  * If the entry key exists, the value gets overwritten, if it doesn't, a new one is created.
@@ -176,6 +208,38 @@ bool set_entry(pw_list_t* pwList, const unsigned char *key, const unsigned char 
     }
     save_to_file(pwList);
     return true;
+}
+
+
+bool remove_entry(pw_list_t* pwList, const unsigned char *key){
+    unsigned char* entry_value = 0;
+    entry_value = calloc(MAX_VAL_LEN, sizeof(unsigned char));
+    if(entry_value == NULL){
+        printf("\033[31m"); // set text color to red
+        perror("[!] Error while allocating memory");
+        printf("\033[0m"); // reset text color to default
+        return false;
+    }
+    long entry_offset = get_entry_value(pwList, entry_value, key);
+    if (entry_offset >= 0)
+    {
+        unsigned char* new_entries = calloc(pwList->size * ENTRIES_BLOCK_SIZE, sizeof(unsigned char));
+
+        // copy values before old value
+        strncpy(new_entries, pwList->entries, entry_offset);
+
+        // copy values after old value
+        strcat(new_entries, pwList->entries + entry_offset + strlen(entry_value) + 1);
+
+        strncpy(pwList->entries, new_entries, pwList->size * ENTRIES_BLOCK_SIZE);
+        save_to_file(pwList);
+        return true;
+    }else{
+        printf("\033[31m"); // set text color to red
+        printf("[!] Entry not found");
+        printf("\033[0m"); // reset text color to default
+    }
+    return false;
 }
 
 
@@ -258,12 +322,14 @@ int save_to_file(pw_list_t *pwList){
     fwrite(salt, 1, sizeof(salt), temp);
 
     /* Encrypt entries and save them */
-    unsigned char *ciphertext;
     int len = strlen(pwList->entries);
-    ciphertext = aes_encrypt(en, (unsigned char *)pwList->entries, &len);
-    fwrite(ciphertext, 1, len, temp);
-
-    free(ciphertext);
+    if (len > 0)
+    {
+        unsigned char *ciphertext;
+        ciphertext = aes_encrypt(en, (unsigned char *)pwList->entries, &len);
+        fwrite(ciphertext, 1, len, temp);
+        free(ciphertext);  
+    }
 
     EVP_CIPHER_CTX_free(en);
     EVP_CIPHER_CTX_free(de);
@@ -326,9 +392,8 @@ int load_pw_file_content(pw_list_t *pwList){
     int len = content_size;
     unsigned char *plaintext;
     plaintext = (unsigned char*) aes_decrypt(de, enc_file_text, &len);
-    unsigned char* entries = (unsigned char*) (plaintext + 1); // remove leading newline
 
-    unsigned int raw_len = strlen(entries) + 1;
+    unsigned int raw_len = strlen(plaintext) + 1;
     unsigned int blocks = (raw_len / ENTRIES_BLOCK_SIZE) + 1;
     size_t memory_size = blocks * ENTRIES_BLOCK_SIZE;
 
@@ -343,7 +408,7 @@ int load_pw_file_content(pw_list_t *pwList){
     }
 
     pwList->size = blocks;
-    strncpy(pwList->entries, entries, len);
+    strncpy(pwList->entries, plaintext, len);
     pwList->entries[len] = '\0';
 
     pwList->entry_count = get_entry_count(pwList);
