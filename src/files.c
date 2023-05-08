@@ -42,7 +42,7 @@ int get_entry_count(const pw_list_t *pwList){
     }
 
     int last_index = strlen(pwList->entries) - 1;
-    if (pwList->entries[last_index] != '\n' && pwList->entries[last_index] != '\0')
+    if (pwList->entries[last_index] != '\n' && strlen(pwList->entries) > 0)
     {
         lines++;
     }
@@ -419,7 +419,9 @@ int load_pw_file_content(pw_list_t *pwList){
 
     free(plaintext);
 
+    printf("\033[32m"); // set text color to green
     printf("[*] Content loaded successfully\n\n");
+    printf("\033[0m"); // reset text color to default
 
     return 0;
 }
