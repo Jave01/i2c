@@ -92,7 +92,7 @@ void list_all_entries(const pw_list_t* pwList){
 long get_entry_value(const pw_list_t *pwList, unsigned char *str, const unsigned char *key){
     int range = get_entry_count(pwList);
     unsigned char* current_entry = pwList->entries;
-    u_int8_t key_len = strlen(key);
+    uint8_t key_len = strlen(key);
 
     for (size_t i = 0; i < range; i++)
     {
@@ -124,7 +124,7 @@ long get_entry_value(const pw_list_t *pwList, unsigned char *str, const unsigned
 long search_entry(const pw_list_t *pwList, const unsigned char *key){
     int range = get_entry_count(pwList);
     unsigned char* current_entry = pwList->entries;
-    u_int8_t key_len = strlen(key);
+    uint8_t key_len = strlen(key);
 
     for (size_t i = 0; i < range; i++)
     {
