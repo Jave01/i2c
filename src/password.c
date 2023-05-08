@@ -2,7 +2,7 @@
  * Filename: password.c
  * Author: David Jäggli
  * Date: 28.3.2023
- * Description: Utility messing with passwords including specifically copying to clipboard and generating passwords.
+ * Description: Utility messing with passwords specifically copying to clipboard and generating passwords.
  *
  */
 
@@ -13,12 +13,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-//#include <sodium.h>
 
 /* custom imports */
 #include "password.h"
 #include "files.h"
 
+
+/**********************************************************************************************
+ * Private function headers
+ **********************************************************************************************/
+static int isXclipInstalled();
+
+
+/**********************************************************************************************
+ * Function definitions
+ **********************************************************************************************/
 /**
  * WIP
  * @param dest
@@ -58,10 +67,55 @@ void generate_passwd(char *dest, const passwordGenComplexity complexity, int pw_
 
 
 /**
- * WIP
- * @param str
+ * Copies string to clipboard.
+ * Uses the xclip command line tool on linux and the windows API on windows.
+ * @param str string to copy to clipboard
  */
-void copy_to_clipboard(const char *str)
-{
+void copy_to_clipboard(const char *str){
+#ifdef _WIN32
+    #include <windows.h>
 
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strlen(str) + 1);
+    if (hMem == NULL) return;
+    
+    strcpy_s((char*)GlobalLock(hMem), strlen(str) + 1, str);
+    GlobalUnlock(hMem);
+    
+    OpenClipboard(NULL);
+    EmptyClipboard();
+    SetClipboardData(CF_TEXT, hMem);
+    CloseClipboard();
+#endif
+#ifdef __linux__
+    // Check if xclip is installed
+    if (!isXclipInstalled()) {
+        printf("\033[1;33m");  // set color to yellow
+        printf("Warning: xclip package is not installed. Please install xclip to enable clipboard functionality.\n");
+        printf("\033[0m");  // reset color
+        return;
+    }
+
+    char command[256];
+    snprintf(command, sizeof(command), "echo '%s' | xclip -selection clipboard", str);
+    system(command);
+    printf("Copied to clipboard\n");
+
+#endif
+}
+
+
+static int isXclipInstalled() {
+    FILE* pipe = popen("which xclip", "r");
+    if (pipe != NULL) {
+        char buffer[128];
+        if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+            // Check if the output contains a valid path
+            if (strlen(buffer) > 1) {
+                pclose(pipe);
+                return 1;  // xclip is installed
+            }
+        }
+        pclose(pipe);
+    }
+    return 0;  // xclip is not installed
 }
