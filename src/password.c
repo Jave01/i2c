@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <windows.h>
 
 /* custom imports */
 #include "password.h"
@@ -73,8 +74,6 @@ void generate_passwd(char *dest, const passwordGenComplexity complexity, int pw_
  */
 void copy_to_clipboard(const char *str){
 #ifdef _WIN32
-    #include <windows.h>
-
     HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strlen(str) + 1);
     if (hMem == NULL) return;
     
