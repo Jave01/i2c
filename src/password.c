@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sodium.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -36,22 +37,23 @@ static int isXclipInstalled();
  * WIP
  * @param dest
  */
-void generate_passwd(char *dest, const passwordGenComplexity complexity, int pw_len)
+void generate_passwd(unsigned char *dest, const passwordGenComplexity complexity, int pw_len)
 {
     if(pw_len < 1 || pw_len > MAX_VAL_LEN){
         printf("Password length not valid\n");
         return;
     }
+
     char charset[MAX_PASSWORD_CHARSET_LEN] = {0};
 
     switch (complexity) {
-        case LOW:
+        case WEAK:
             strcpy(charset, PASSWORD_COMPLEXITY_LOW_CHARSET);
             break;
         case MEDIUM:
             strcpy(charset, PASSWORD_COMPLEXITY_MEDIUM_CHARSET);
             break;
-        case HIGH:
+        case STRONG:
             strcpy(charset, PASSWORD_COMPLEXITY_HIGH_CHARSET);
             break;
         default:
@@ -61,8 +63,11 @@ void generate_passwd(char *dest, const passwordGenComplexity complexity, int pw_
     const int charset_len = strlen(charset);
     int char_index;
 
+    unsigned char random_bytes[pw_len];
+    randombytes_buf(random_bytes, pw_len);
+
     for (int i = 0; i < pw_len; ++i) {
-        char_index = rand() % charset_len;
+        char_index = random_bytes[i] % charset_len;
         dest[i] = charset[char_index];
     }
 

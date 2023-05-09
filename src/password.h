@@ -13,7 +13,7 @@
 #include <string.h>
 
 /**********************************************************************************************
- * Contants
+ * Constants
  **********************************************************************************************/
 #define PASSWORD_COMPLEXITY_LOW_CHARSET         "abcdefghijklmnopqrstuvwxyz1234567890"
 #define PASSWORD_COMPLEXITY_MEDIUM_CHARSET      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
@@ -24,15 +24,15 @@
  * Types
  **********************************************************************************************/
 typedef enum PasswordGenComplexity{
-    LOW,
+    WEAK,
     MEDIUM,
-    HIGH
+    STRONG
 }passwordGenComplexity;
 
 /**********************************************************************************************
  * Public functions
  **********************************************************************************************/
-void generate_passwd(char *dest, const passwordGenComplexity complexity, int pw_len);
+void generate_passwd(unsigned char *dest, const passwordGenComplexity complexity, int pw_len);
 void copy_to_clipboard(const char *str);
 
 
