@@ -48,18 +48,25 @@ sudo apt-get install libsodium-dev
 And the src/CMakeLists.txt should look like this:
 
 ```cmake
-find_package(OpenSSL REQUIRED)
-
 # libsodium
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBSODIUM REQUIRED libsodium)
 include_directories(${LIBSODIUM_INCLUDE_DIRS})
 
 add_executable(pw_manager main.c crypto.c files.c password.c)
-
 target_include_directories(pw_manager PUBLIC include)
-target_link_libraries(pw_manager ${LIBSODIUM_LIBRARIES} ${X11_LIBRARIES})
-target_link_libraries(pw_manager OpenSSL::Crypto)
+
+# use static openssl library
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+message("OPENSSL FOUND!")
+endif()
+target_link_libraries(pw_manager OpenSSL::Crypto ${LIBSODIUM_DIR}/lib/libsodium.a ${CMAKE_DL_LIBS})
+
+message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OpenSSL found: ${OPENSSL_FOUND}")
+message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 ```
 
 #### Windows
@@ -69,7 +76,8 @@ target_link_libraries(pw_manager OpenSSL::Crypto)
 3. Then change your src/CMakeLists.txt to the following:
 
 ```cmake
-find_package(OpenSSL REQUIRED)
+# Enforce the use of static libraries
+set(BUILD_SHARED_LIBS OFF)
 
 set(LIBSODIUM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libsodium)
 include_directories(${LIBSODIUM_DIR}/include)
@@ -77,7 +85,19 @@ include_directories(${LIBSODIUM_DIR}/include)
 add_executable(pw_manager main.c crypto.c files.c password.c)
 
 target_include_directories(pw_manager PUBLIC include)
-target_link_libraries(pw_manager PRIVATE OpenSSL::Crypto ${LIBSODIUM_DIR}/lib/libsodium.a)
+# target_link_libraries(pw_manager PRIVATE ${LIBSODIUM_DIR}/lib/libsodium.a)
+
+# Link OpenSSL statically
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+message("OPENSSL FOUND!")
+endif()
+target_link_libraries(pw_manager OpenSSL::Crypto ${LIBSODIUM_DIR}/lib/libsodium.a ${CMAKE_DL_LIBS})
+
+message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OpenSSL found: ${OPENSSL_FOUND}")
+message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 ```
 
 Also add the libsodium folder to your .gitignore file.
