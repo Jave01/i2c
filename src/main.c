@@ -65,8 +65,6 @@ int main() {
         .size = 1,
     };
 
-    printf("[*] Application initialized\n\n");
-
 
     /* startup sequence */
     char inp;
@@ -131,8 +129,73 @@ int main() {
             case 'e': {
                 unsigned char key[MAX_KEY_LEN] = {0};
                 unsigned char val[MAX_VAL_LEN] = {0};
+
                 get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
-                get_n_chars(val, MAX_VAL_LEN, "Enter the new value: ");
+                
+                /*  Generate password or let user set manually */
+                bool inp_valid = false;
+                while(!inp_valid){
+                    printf("Choose one of the following:\n1 - set password manually\n2 - generate password\n> ");
+                    scanf("%c", &inp);
+                    fgetc(stdin); // remove whitespace for further scanning.
+                    if (inp < '1' || inp > '2'){
+                        printf("not a valid option\n");
+                        continue;
+                    }
+                    switch (inp)
+                    {
+                        case '1':
+                            get_n_chars(val, MAX_VAL_LEN, "Enter the new value: ");
+                            inp_valid = true;
+                            break;
+                        case '2':{
+                            printf("Choose the charset complexity:\n1 - weak\n2 - medium\n3 - strong\n> ");
+                            scanf("%c", &inp);
+                            fgetc(stdin); // remove whitespace for further scanning.
+                            if (inp < '1' || inp > '3'){
+                                printf("not a valid option\n");
+                                continue;
+                            }
+
+                            unsigned char* len_inp = malloc(sizeof(char) * 3);
+                            get_n_chars(len_inp, 3, "Enter length of password: ");
+                            int len = atoi(len_inp);
+                            if (len > MAX_VAL_LEN || len < 1) {
+                                printf("\033[31m"); // set text color to red
+                                printf("[!] Password len not valid\n");
+                                printf("\033[0m"); // reset text color to default
+                                break;
+                            }
+                            switch (inp)
+                            {
+                                case '1':
+                                    generate_passwd(val, WEAK, len);
+                                    inp_valid = true;
+                                    break;
+                                case '2':
+                                    generate_passwd(val, MEDIUM, len);
+                                    inp_valid = true;
+                                    break;
+                                case '3':
+                                    generate_passwd(val, STRONG, len);
+                                    inp_valid = true;
+                                    break;
+                                default:
+                                    printf("not a valid option\n");
+                                    break;
+                            }
+                            break;
+                        }
+                        case 'q':
+                            printf("\n[*] quitting...\n");
+                            running = false;
+                            inp_valid = true;
+                            break;
+                        default:
+                            printf("not a valid option\n");
+                            break;
+                    }
+                }
                 set_entry(&pwList, key, val);
                 break;
             }
