@@ -73,7 +73,7 @@ int main() {
         printf("Enter 'o' for opening a database, 'c' for creating one or 'q' to quit:\n> ");
         scanf(" %c", &inp);
 
-        fgetc(stdin); // remove whitespace for further scanning.
+        fflush(stdin); // clear input buffer
 
         if (inp == 'o') {
             get_db_name(pwList.filename);
@@ -124,7 +124,7 @@ int main() {
     while (running) {
         printf("> ");
         inp = getchar();
-        fgetc(stdin); // remove whitespace for further scanning.
+        fflush(stdin); // clear input buffer
         switch (inp) {
             case 'e': {
                 unsigned char key[MAX_KEY_LEN] = {0};
@@ -136,12 +136,14 @@ int main() {
                 bool inp_valid = false;
                 while(!inp_valid){
                     printf("Choose one of the following:\n1 - set password manually\n2 - generate password\n> ");
-                    scanf("%c", &inp);
-                    fgetc(stdin); // remove whitespace for further scanning.
+                    inp = getchar();
+                    fflush(stdin); // clear input buffer
+
                     if (inp < '1' || inp > '2'){
                         printf("not a valid option\n");
                         continue;
                     }
+
                     switch (inp)
                     {
                         case '1':
@@ -150,8 +152,9 @@ int main() {
                             break;
                         case '2':{
                             printf("Choose the charset complexity:\n1 - weak\n2 - medium\n3 - strong\n> ");
-                            scanf("%c", &inp);
-                            fgetc(stdin); // remove whitespace for further scanning.
+                            inp = getchar();
+                            fflush(stdin); // clear input buffer
+                            
                             if (inp < '1' || inp > '3'){
                                 printf("not a valid option\n");
                                 continue;
