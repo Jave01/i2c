@@ -70,7 +70,7 @@ void generate_passwd(unsigned char *dest, const passwordGenComplexity complexity
         char_index = random_bytes[i] % charset_len;
         dest[i] = charset[char_index];
     }
-
+    dest[pw_len] = '\0';
     printf("generated password: %s\n", dest);
 }
 
