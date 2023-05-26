@@ -44,7 +44,7 @@ void generate_passwd(unsigned char *dest, const passwordGenComplexity complexity
         return;
     }
 
-    char charset[MAX_PASSWORD_CHARSET_LEN] = {0};
+    char charset[MAX_PASSWORD_CHARSET_LEN+1] = {0};
 
     switch (complexity) {
         case WEAK:
@@ -60,14 +60,13 @@ void generate_passwd(unsigned char *dest, const passwordGenComplexity complexity
             printf("invalid password generation complexity\n");
             break;
     }
-    const int charset_len = strlen(charset);
-    int char_index;
 
     unsigned char random_bytes[pw_len];
     randombytes_buf(random_bytes, pw_len);
 
+    int char_index;
     for (int i = 0; i < pw_len; ++i) {
-        char_index = random_bytes[i] % charset_len;
+        char_index = random_bytes[i] % strlen(charset);
         dest[i] = charset[char_index];
     }
     dest[pw_len] = '\0';
