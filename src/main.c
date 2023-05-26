@@ -71,51 +71,59 @@ int main() {
     while (pwList.file == NULL && running) {
         /* Clear input until whitespace */
         printf("Enter 'o' for opening a database, 'c' for creating one or 'q' to quit:\n> ");
-        scanf(" %c", &inp);
-
+        inp = getchar();
         fflush(stdin); // clear input buffer
 
-        if (inp == 'o') {
-            get_db_name(pwList.filename);
-            if(unlock_database(&pwList) == false){
-                continue;
-            }
-        } else if (inp == 'c') {
-            get_db_name(pwList.filename);
+        switch (inp)
+        {
+            case 'o':
+                get_db_name(pwList.filename);
+                if(unlock_database(&pwList) == false){
+                    continue;
+                }
+                break;
 
-            /* check if file already exists */
-            pwList.file = fopen(pwList.filename, "r");
-            if (pwList.file != NULL) {
-                printf("\033[31m"); // set text color to red
-                printf("[!] File already exists\n");
+            case 'c':
+                get_db_name(pwList.filename);
+
+                /* check if file already exists */
+                pwList.file = fopen(pwList.filename, "r");
+                if (pwList.file != NULL) {
+                    printf("\033[31m"); // set text color to red
+                    printf("[!] File already exists\n");
+                    printf("\033[0m"); // reset text color to default
+                    fclose(pwList.file);
+                    pwList.file = NULL;
+                    pwList.filename = NULL;
+                    continue;
+                }
+
+                /* create new file */
+                pwList.file = fopen(pwList.filename, "w+");
+                if (pwList.file == NULL) {
+                    printf("\033[31m"); // set text color to red
+                    perror("\n[!] Error creating file\n");
+                    printf("\033[0m"); // reset text color to default
+                    continue;
+                }
+
+                request_master_password(pwList.master_pw, true);
+                save_master_pw(&pwList, pwList.master_pw);
+                save_to_file(&pwList); // initial creation of file
+                printf("\033[32m"); // set text color to green
+                printf("\n[*] Database created successfully\n\n");
                 printf("\033[0m"); // reset text color to default
-                fclose(pwList.file);
-                pwList.file = NULL;
-                pwList.filename = NULL;
-                continue;
-            }
+                break;
 
-            /* create new file */
-            pwList.file = fopen(pwList.filename, "w+");
-            if (pwList.file == NULL) {
+            case 'q':
+                printf("\n[*] quitting...\n");
+                cleanup(&pwList);
+                return 0;
+
+            default:
                 printf("\033[31m"); // set text color to red
-                perror("\n[!] Error creating file\n");
+                printf("[!] Invalid option\n");
                 printf("\033[0m"); // reset text color to default
-                continue;
-            }
-
-            request_master_password(pwList.master_pw, true);
-            save_master_pw(&pwList, pwList.master_pw);
-            save_to_file(&pwList); // initial creation of file
-            printf("\n[*] Database created successfully\n\n");
-
-        } else if (inp == 'q') {
-            printf("\n[*] quitting...\n");
-            cleanup(&pwList);
-            return 0;
-        } else {
-            printf("not a valid option\n");
-            continue;
         }
     }
 
@@ -131,7 +139,13 @@ int main() {
                 unsigned char val[MAX_VAL_LEN] = {0};
 
                 get_n_chars(key, MAX_KEY_LEN, "Enter the key: ");
-                
+                if (key[0] == '\0') {
+                    printf("\033[31m"); // set text color to red
+                    printf("[!] Key cannot be empty\n");
+                    printf("\033[0m"); // reset text color to default
+                    break;
+                }
+               
                 /*  Generate password or let user set manually */
                 bool inp_valid = false;
                 while(!inp_valid){
@@ -140,7 +154,7 @@ int main() {
                     fflush(stdin); // clear input buffer
 
                     if (inp < '1' || inp > '2'){
-                        printf("not a valid option\n");
+                        printf("[*] not a valid option\n");
                         continue;
                     }
 
@@ -156,7 +170,9 @@ int main() {
                             fflush(stdin); // clear input buffer
                             
                             if (inp < '1' || inp > '3'){
-                                printf("not a valid option\n");
+                                printf("\033[31m"); // set text color to red
+                                printf("[!] not a valid option\n");
+                                printf("\033[0m"); // reset text color to default
                                 continue;
                             }
 
@@ -165,7 +181,7 @@ int main() {
                             int len = atoi(len_inp);
                             if (len > MAX_VAL_LEN || len < 1) {
                                 printf("\033[31m"); // set text color to red
-                                printf("[!] Password len not valid\n");
+                                printf("[!] Password len not valid (max: %d)\n", MAX_VAL_LEN);
                                 printf("\033[0m"); // reset text color to default
                                 break;
                             }
@@ -184,7 +200,9 @@ int main() {
                                     inp_valid = true;
                                     break;
                                 default:
+                                    printf("\033[31m"); // set text color to red
                                     printf("not a valid option\n");
+                                    printf("\033[0m"); // reset text color to default
                                     break;
                             }
                             break;
@@ -195,11 +213,17 @@ int main() {
                             inp_valid = true;
                             break;
                         default:
-                            printf("not a valid option\n");
+                            printf("\033[31m"); // set text color to red
+                            printf("[!] not a valid option\n");
+                            printf("\033[0m"); // reset text color to default
                             break;
                     }
                 }
-                set_entry(&pwList, key, val);
+                if(!set_entry(&pwList, key, val)){
+                    printf("\033[31m"); // set text color to red
+                    printf("[!] Error setting entry\n");
+                    printf("\033[0m"); // reset text color to default
+                }
                 break;
             }
             case 'q':
@@ -231,10 +255,14 @@ int main() {
                 printf("----------------\n");
                 break;
             case 'h':
-                printf("Summary of valid character inputs:\ne - edit database\nd - delete entry\ng - get/search for entry & copy to clipboard\nl - list all entries\nq - quit application\nh - help\n");
+                printf("Summary of valid character inputs:\ne - edit entry\nd - delete entry\ng - get/search for entry & copy to clipboard\nl - list all entries\nq - quit application\nh - help\n");
+                break;
+            case '\n':
                 break;
             default:
-                printf("Invalid option\n");
+                printf("\033[31m"); // set text color to red
+                printf("[!] Invalid option enter 'h' for help\n");
+                printf("\033[0m"); // reset text color to default
        }
    }
 
@@ -292,17 +320,19 @@ static bool is_printable(const unsigned char* str){
 static bool unlock_database(pw_list_t *pwList){
     char pw[MAX_MASTER_PW_LEN + 1] = {0};
 
-    request_master_password(pw, false);
-
     if (pwList->file != NULL){
         fclose(pwList->file);
     }
 
     pwList->file = fopen(pwList->filename, "r+");
     if (pwList->file == NULL){
-        printf("Failed to open file\n");
+        printf("\033[31m"); // set text color to red
+        printf("[!] Failed to open file\n");
+        printf("\033[0m"); // reset text color to default
         return false;
     }
+
+    request_master_password(pw, false);
 
     if(check_master_pw(pwList, pw) == true){
         printf("\033[32m"); // set text color to green
