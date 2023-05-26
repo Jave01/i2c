@@ -358,7 +358,7 @@ int load_pw_file_content(pw_list_t *pwList){
     int bytes_read = fread(enc_file_text, 1, content_size, pwList->file);
     if (bytes_read != content_size) {
         printf("\033[31m"); // set text color to red
-        printf("[!] Error reading file\n");
+        printf("[!] Error reading file content, data may be corrupted\n\n");
         printf("\033[0m"); // reset text color to default
         return 1;
     }
