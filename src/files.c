@@ -354,14 +354,26 @@ int load_pw_file_content(pw_list_t *pwList){
     unsigned char salt[SALT_BYTES];
     fread(salt, 1, sizeof(salt), pwList->file);
 
+    /* open file in binary mode for reading encrypted data */
+    fclose(pwList->file);
+    pwList->file = fopen(pwList->filename, "rb"); 
+    fseek(pwList->file, header_length, SEEK_SET);
+
+    /* read encrypted data */
     unsigned char enc_file_text[content_size];
     int bytes_read = fread(enc_file_text, 1, content_size, pwList->file);
     if (bytes_read != content_size) {
         printf("\033[31m"); // set text color to red
         printf("[!] Error reading file content, data may be corrupted\n\n");
         printf("\033[0m"); // reset text color to default
+        printf("bytes_read: %d, content_size: %d\n", bytes_read, content_size);
         return 1;
     }
+    
+    /* reopen file in editing mode */
+    fclose(pwList->file);
+    pwList->file = fopen(pwList->filename, "r+"); 
+    rewind(pwList->file);
 
     /* "opaque" encryption, decryption ctx structures that libcrypto uses to record
         status of enc/dec operations */
